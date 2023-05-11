@@ -6,18 +6,25 @@ from PIL import Image, ImageTk, ImageOps
 import pyperclip
 import os
 import sys
+import tkinter.ttk as ttk
 
+def darkstyle(root):
+    style = ttk.Style(root)
+    filePath = resource_path("theme/forest-light.tcl")
+    root.tk.call('source', filePath)
+    style.theme_use('forest-light')
+    return style
 
 class ImageViewer(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
+        self.style = darkstyle(self.master)
         self.master.title("Glut Image Coordinator")
         # self.master.config(bg="skyblue")
-        self.master.geometry("500x700")
-        self.master.minsize(500, 700)
-        self.master.maxsize(500, 700)
-
+        self.master.geometry("500x736")
+        self.master.minsize(500, 736)
+        self.master.maxsize(500, 736)
         # Creating Menubar
         menubar = Menu(master)
 
@@ -26,6 +33,7 @@ class ImageViewer(tk.Frame):
         menubar.add_cascade(label='File', menu=file)
         file.add_command(label='New Window', command=self.create_new_window)
         file.add_command(label='Open Image...', command=self.upload_image)
+        file.add_command(label='Close Image', command=self.upload_placeholder_image)
         file.add_separator()
         file.add_command(label='Exit', command=master.destroy)
 
@@ -71,9 +79,9 @@ class ImageViewer(tk.Frame):
         self.height = 0.0
         self.width = 0.0
 
-        self.dialogBox = Frame(
-            master=self.master, bg="#eeeeee", bd=0.8, relief="solid")
-        self.dialogBox.pack(side=BOTTOM, fill=X, padx=2, pady=2)
+        self.dialogBox = ttk.LabelFrame(
+            master=self.master,text='Output Window' ,relief="solid")
+        self.dialogBox.pack(fill=X, padx=2,pady=2)
 
         self.zoom_canvas = tk.Canvas(
             self.dialogBox, width=200, height=200, borderwidth=1, relief="solid")
@@ -81,35 +89,35 @@ class ImageViewer(tk.Frame):
         self.update_zoom_window()
 
         # create a label to display "Image Information" text
-        label = tk.Label(
-            self.dialogBox, text="Image Information", font=("Arial", 14))
+        label = ttk.Label(
+            self.dialogBox, text="Image Information", font=("Helvetica", 14))
         label.pack(fill=X, padx=10, pady=10)
 
         # Create a label to display the height of the image
         self.height_var = tk.StringVar()
-        self.height_var.set("Height: 0")
-        self.height_label = tk.Label(
-            self.dialogBox, textvariable=self.height_var, font=("Arial", 12))
-        self.height_label.pack()
+        self.height_var.set("Image Height: 0")
+        self.height_label = ttk.Label(
+            self.dialogBox, textvariable=self.height_var, font=("Helvetica", 12))
+        self.height_label.pack(fill=X, padx=10, pady= 2)
 
         # Create a label to display the width of the image
         self.width_var = tk.StringVar()
-        self.width_var.set("Width: 0")
-        self.width_label = tk.Label(
-            self.dialogBox, textvariable=self.width_var, font=("Arial", 12))
-        self.width_label.pack()
+        self.width_var.set("Image Width: 0")
+        self.width_label = ttk.Label(
+            self.dialogBox, textvariable=self.width_var, font=("Helvetica", 12))
+        self.width_label.pack(fill=X, padx=10 , pady= 2)
 
         self.coord_var = tk.StringVar()
-        self.coord_var.set("x=0, y=0")
-        coord_label = tk.Label(
-            self.dialogBox, textvariable=self.coord_var, font=("Arial", 12))
-        coord_label.pack()
+        self.coord_var.set("X-Axis=0, Y-Axis=0")
+        coord_label = ttk.Label(
+            self.dialogBox, textvariable=self.coord_var, font=("Helvetica", 12))
+        coord_label.pack(fill=X, padx=10, pady= 2)
 
         self.rgb_var = tk.StringVar()
-        self.rgb_var.set("r=0, g=0, b=0")
-        rgb_label = tk.Label(
-            self.dialogBox, textvariable=self.rgb_var, font=("Arial", 12))
-        rgb_label.pack()
+        self.rgb_var.set("R=0, G=0, B=0")
+        rgb_label = ttk.Label(
+            self.dialogBox, textvariable=self.rgb_var, font=("Helvetica", 12))
+        rgb_label.pack(fill=X, padx=10, pady= 2)
 
         self.upload_placeholder_image()
 
@@ -185,7 +193,7 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Update the coordinate text
-        self.coord_var.set("x={}, y={}".format(round(
+        self.coord_var.set("X-Axis={}, Y-Axis={}".format(round(
             (self.mouse_x / 500), 4), round((self.image_canvas.winfo_height() - event.y) / 500, 4)))
 
         # Update the RGB text
@@ -198,7 +206,7 @@ class ImageViewer(tk.Frame):
                 pixel = self.image.getpixel((x, y))
                 if len(pixel) >= 3:
                     r, g, b = pixel[:3]
-                    self.rgb_var.set("r={}, g={}, b={}".format(
+                    self.rgb_var.set("R={}, G={}, B={}".format(
                         round(r/255, 4), round(g/255, 4), round(b/255, 4)))
 
         # Update the zoom window if it exists
@@ -222,11 +230,12 @@ class ImageViewer(tk.Frame):
                 else:
                     r, g, b, *_ = self.image.getpixel((x, y))
                     # handle the case where the pixel values are not RGB
-                coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0f);"
+                coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0.0f);"
                 rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
                 text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
+                
 
     def on_mouse_release(self, event):
         # Stop dragging the zoom rectangle
@@ -364,51 +373,52 @@ class ImageViewer(tk.Frame):
                 else:
                     r, g, b, *_ = self.image.getpixel((x, y))
                     # handle the case where the pixel values are not RGB
-                coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0f);"
+                coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0.0f);"
                 rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
                 text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
 
+
     def show_about_dialog(self):
         # Create a Toplevel window for the about dialog
         about_window = tk.Toplevel(self.master)
-        about_window.minsize(300, 150)
-        about_window.maxsize(300, 150)
+        about_window.minsize(300, 160)
+        about_window.maxsize(300, 160)
         about_window.title("About Glut Image Coordinator")
         filePath = resource_path("img/icon.ico")
         about_window.iconbitmap(filePath)
 
         # Add a label with the program name and version
-        label1 = tk.Label(about_window, text="Glut Image Coordinator v1.1")
+        label1 = ttk.Label(about_window, text="Glut Image Coordinator v1.2" , font=("Helvetica", 14))
         label1.pack(pady=10)
 
         # Add a label with the developer name and email
-        label2 = tk.Label(
-            about_window, text="Developed by Jahid Hasan\nEmail: vdjsovaj@gmail.com")
+        label2 = ttk.Label(
+            about_window, text="Developed by Jahid Hasan\nEmail: vdjsovaj@gmail.com",  font=("Helvetica", 12))
         label2.pack(padx=10, pady=10)
 
         # Add a button to close the about dialog
-        close_button = tk.Button(
+        close_button = ttk.Button(
             about_window, text="Close", command=about_window.destroy)
         close_button.pack(pady=10)
 
     def on_contact_us_click(self):
         # Create a new Toplevel window for the Contact Us dialog
         top = Toplevel(self.master)
-        top.minsize(300, 150)
-        top.maxsize(300, 150)
+        top.minsize(300, 160)
+        top.maxsize(300, 160)
         top.title("Contact Us")
         filePath = resource_path("img/icon.ico")
         top.iconbitmap(filePath)
         # Add some text to the window
-        Label(top, text="For support or inquiries, please email us at:").pack(
+        ttk.Label(top, text="For support or inquiries, please email us at:" , font=("Helvetica", 14)).pack(
             padx=10, pady=10)
-        Label(top, text="vdjsovaj@gmail.com").pack()
-        Label(top, text="We usually respond within 24 hours.").pack()
+        ttk.Label(top, text="vdjsovaj@gmail.com" , font=("Helvetica", 12)).pack()
+        ttk.Label(top, text="We usually respond within 24 hours." , font=("Helvetica", 12)).pack()
 
         # Add a button to close the window
-        Button(top, text="Close", command=top.destroy).pack(padx=10, pady=10)
+        ttk.Button(top, text="Close", command=top.destroy).pack(padx=10, pady=10)
 
 
 def resource_path(relative_path):
@@ -428,8 +438,8 @@ if __name__ == "__main__":
         app = ImageViewer(master=root)
         app.set_coordinates(0, 500, 0, 580, 0, 0)
         root.bind("<Control-x>", lambda event: app.save_to_clipboard())
-        root.bind("<Control-=>", lambda event: app.zoom_in())
-        root.bind("<Control-minus>", lambda event: app.zoom_out())
+        # root.bind("<Control-=>", lambda event: app.zoom_in())
+        # root.bind("<Control-minus>", lambda event: app.zoom_out())
         app.mainloop()
     except Exception as e:
         print("An error occurred: ", e)
