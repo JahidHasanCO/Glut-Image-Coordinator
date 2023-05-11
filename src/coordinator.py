@@ -1,11 +1,12 @@
 import tkinter as tk
-from tkinter import Menu, Frame, BOTTOM,X, Label, Toplevel,Button
+from tkinter import Menu, Frame, BOTTOM, X, Label, Toplevel, Button
 from tkinter import messagebox
 from tkinter import filedialog
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageOps
 import pyperclip
 import os
 import sys
+
 
 class ImageViewer(tk.Frame):
     def __init__(self, master=None):
@@ -21,28 +22,33 @@ class ImageViewer(tk.Frame):
         menubar = Menu(master)
 
         # Adding File Menu and commands
-        file = Menu(menubar, tearoff = 0)
-        menubar.add_cascade(label ='File', menu = file)
-        file.add_command(label ='Open Image...', command = self.upload_image)
+        file = Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='File', menu=file)
+        file.add_command(label='New Window', command=self.create_new_window)
+        file.add_command(label='Open Image...', command=self.upload_image)
         file.add_separator()
-        file.add_command(label ='Exit', command = master.destroy)
+        file.add_command(label='Exit', command=master.destroy)
 
         # Adding Help Menu
-        help_ = Menu(menubar, tearoff = 0)
-        menubar.add_cascade(label ='Help', menu = help_)
-        help_.add_command(label ='Contract Us', command = self.on_contact_us_click)
+        help_ = Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Help', menu=help_)
+        help_.add_command(label='Contract Us',
+                          command=self.on_contact_us_click)
         help_.add_separator()
-        help_.add_command(label ='About Us', command = self.show_about_dialog)
+        help_.add_command(label='About Us', command=self.show_about_dialog)
 
         # display Menu
-        master.config(menu = menubar)
+        master.config(menu=menubar)
         self.create_widgets()
 
+    def create_new_window(self):
+        new_window = tk.Toplevel(self.master)
+        image_viewer = ImageViewer(new_window)
 
     def create_widgets(self):
 
         # Create an image canvas to display the uploaded image
-        self.image_canvas = tk.Canvas(self.master,width=500, height=500)
+        self.image_canvas = tk.Canvas(self.master, width=500, height=500)
         self.image_canvas.pack()
 
         # Bind the mouse events to the canvas
@@ -65,37 +71,44 @@ class ImageViewer(tk.Frame):
         self.height = 0.0
         self.width = 0.0
 
-        self.dialogBox = Frame(master=self.master,bg="#eeeeee", bd=0.8, relief="solid")
-        self.dialogBox.pack(side = BOTTOM,fill=X, padx=2, pady=2 ) 
+        self.dialogBox = Frame(
+            master=self.master, bg="#eeeeee", bd=0.8, relief="solid")
+        self.dialogBox.pack(side=BOTTOM, fill=X, padx=2, pady=2)
 
-        self.zoom_canvas = tk.Canvas(self.dialogBox, width=200, height=200, borderwidth=1, relief="solid")
+        self.zoom_canvas = tk.Canvas(
+            self.dialogBox, width=200, height=200, borderwidth=1, relief="solid")
         self.zoom_canvas.pack(side="left")
         self.update_zoom_window()
 
         # create a label to display "Image Information" text
-        label = tk.Label(self.dialogBox, text="Image Information",font=("Arial", 14))
-        label.pack(fill=X,padx=10,pady=10)
+        label = tk.Label(
+            self.dialogBox, text="Image Information", font=("Arial", 14))
+        label.pack(fill=X, padx=10, pady=10)
 
         # Create a label to display the height of the image
         self.height_var = tk.StringVar()
         self.height_var.set("Height: 0")
-        self.height_label = tk.Label(self.dialogBox, textvariable=self.height_var,font=("Arial", 12))
+        self.height_label = tk.Label(
+            self.dialogBox, textvariable=self.height_var, font=("Arial", 12))
         self.height_label.pack()
 
         # Create a label to display the width of the image
         self.width_var = tk.StringVar()
         self.width_var.set("Width: 0")
-        self.width_label = tk.Label(self.dialogBox, textvariable=self.width_var,font=("Arial", 12))
+        self.width_label = tk.Label(
+            self.dialogBox, textvariable=self.width_var, font=("Arial", 12))
         self.width_label.pack()
 
         self.coord_var = tk.StringVar()
         self.coord_var.set("x=0, y=0")
-        coord_label = tk.Label(self.dialogBox, textvariable=self.coord_var,font=("Arial", 12))
+        coord_label = tk.Label(
+            self.dialogBox, textvariable=self.coord_var, font=("Arial", 12))
         coord_label.pack()
 
         self.rgb_var = tk.StringVar()
         self.rgb_var.set("r=0, g=0, b=0")
-        rgb_label = tk.Label(self.dialogBox, textvariable=self.rgb_var,font=("Arial", 12))
+        rgb_label = tk.Label(
+            self.dialogBox, textvariable=self.rgb_var, font=("Arial", 12))
         rgb_label.pack()
 
         self.upload_placeholder_image()
@@ -123,7 +136,8 @@ class ImageViewer(tk.Frame):
             self.image = self.image.resize((500, 500), Image.LANCZOS)
 
             self.image_tk = ImageTk.PhotoImage(self.image)
-            self.image_id = self.image_canvas.create_image(0, 0, anchor="nw", image=self.image_tk)
+            self.image_id = self.image_canvas.create_image(
+                0, 0, anchor="nw", image=self.image_tk)
 
             # Update the height and width labels with the image size
             self.height = self.image.height
@@ -135,34 +149,35 @@ class ImageViewer(tk.Frame):
 
     def upload_placeholder_image(self):
         # Open a file dialog to select an image file
-            filePath = resource_path("img/icon.ico")
-            # Load the image and display it on the canvas
-            self.image = Image.open(filePath)
-            # crop the image to a square aspect ratio
-            width, height = self.image.size
-            if width > height:
-                left = (width - height) / 2
-                right = left + height
-                top, bottom = 0, height
-            else:
-                top = (height - width) / 2
-                bottom = top + width
-                left, right = 0, width
-            self.image = self.image.crop((left, top, right, bottom))
+        filePath = resource_path("img/icon.ico")
+        # Load the image and display it on the canvas
+        self.image = Image.open(filePath)
+        # crop the image to a square aspect ratio
+        width, height = self.image.size
+        if width > height:
+            left = (width - height) / 2
+            right = left + height
+            top, bottom = 0, height
+        else:
+            top = (height - width) / 2
+            bottom = top + width
+            left, right = 0, width
+        self.image = self.image.crop((left, top, right, bottom))
 
-            # resize the image to fit within the canvas
-            self.image = self.image.resize((500, 500), Image.LANCZOS)
+        # resize the image to fit within the canvas
+        self.image = self.image.resize((500, 500), Image.LANCZOS)
 
-            self.image_tk = ImageTk.PhotoImage(self.image)
-            self.image_id = self.image_canvas.create_image(0, 0, anchor="nw", image=self.image_tk)
+        self.image_tk = ImageTk.PhotoImage(self.image)
+        self.image_id = self.image_canvas.create_image(
+            0, 0, anchor="nw", image=self.image_tk)
 
-            # Update the height and width labels with the image size
-            self.height = self.image.height
-            self.width = self.image.width
-            self.height_var.set("Height: {}".format(self.image.height))
-            self.width_var.set("Width: {}".format(self.image.width))
-            # Resize the canvas to match the fixed size
-            self.image_canvas.config(width=500, height=500)
+        # Update the height and width labels with the image size
+        self.height = self.image.height
+        self.width = self.image.width
+        self.height_var.set("Height: {}".format(self.image.height))
+        self.width_var.set("Width: {}".format(self.image.width))
+        # Resize the canvas to match the fixed size
+        self.image_canvas.config(width=500, height=500)
 
     def on_mouse_move(self, event):
         # Update the mouse coordinates
@@ -170,17 +185,21 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Update the coordinate text
-        self.coord_var.set("x={}, y={}".format(round((self.mouse_x / 500),4), round((self.image_canvas.winfo_height() - event.y) / 500,4)))
+        self.coord_var.set("x={}, y={}".format(round(
+            (self.mouse_x / 500), 4), round((self.image_canvas.winfo_height() - event.y) / 500, 4)))
 
         # Update the RGB text
         if self.image:
-            x = int((self.mouse_x - self.x_center) / self.zoom_factor + self.x_center)
-            y = int((self.mouse_y - self.y_center) / self.zoom_factor + self.y_center)
+            x = int((self.mouse_x - self.x_center) /
+                    self.zoom_factor + self.x_center)
+            y = int((self.mouse_y - self.y_center) /
+                    self.zoom_factor + self.y_center)
             if x >= 0 and x < self.image.width and y >= 0 and y < self.image.height:
                 pixel = self.image.getpixel((x, y))
                 if len(pixel) >= 3:
                     r, g, b = pixel[:3]
-                    self.rgb_var.set("r={}, g={}, b={}".format(round(r/255, 4), round(g/255, 4), round(b/255, 4)))
+                    self.rgb_var.set("r={}, g={}, b={}".format(
+                        round(r/255, 4), round(g/255, 4), round(b/255, 4)))
 
         # Update the zoom window if it exists
         if self.zoom_canvas:
@@ -189,10 +208,12 @@ class ImageViewer(tk.Frame):
     def on_mouse_press(self, event):
         if self.zoom_rect_id and self.image:
             self.mouse_pressed = True
-                # Copy the coordinates and RGB values to the clipboard
+            # Copy the coordinates and RGB values to the clipboard
         if self.image:
-            x = int((self.mouse_x - self.x_center) / self.zoom_factor + self.x_center)
-            y = int((self.mouse_y - self.y_center) / self.zoom_factor + self.y_center)
+            x = int((self.mouse_x - self.x_center) /
+                    self.zoom_factor + self.x_center)
+            y = int((self.mouse_y - self.y_center) /
+                    self.zoom_factor + self.y_center)
             if x >= self.x_min and x <= self.x_max and y >= self.y_min and y <= self.y_max:
                 pixel = self.image.getpixel((x, y))
                 if len(pixel) >= 3:
@@ -202,8 +223,8 @@ class ImageViewer(tk.Frame):
                     r, g, b, *_ = self.image.getpixel((x, y))
                     # handle the case where the pixel values are not RGB
                 coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0f);"
-                rgb = f"glColor3f({r}f, {g}f, {b}f);"
-                text = "{}\n{}".format(rgb,coords)
+                rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
+                text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
 
@@ -217,30 +238,19 @@ class ImageViewer(tk.Frame):
         self.y_center = self.mouse_y / self.zoom_factor
         self.zoom_image = Image.new("RGB", (200, 200), "white")
         self.zoom_image_tk = ImageTk.PhotoImage(self.zoom_image)
-        self.zoom_canvas.create_image(0, 0, anchor="nw", image=self.zoom_image_tk)
-
-        # Draw a crosshair in the center of the zoom window
-        x1 = 0
-        y1 = 100
-        x2 = 200
-        y2 = 100
-        self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
-
-        x1 = 100
-        y1 = 0
-        x2 = 100
-        y2 = 200
-        self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
+        self.zoom_canvas.create_image(
+            0, 0, anchor="nw", image=self.zoom_image_tk)
 
         # Create a rectangle to show the zoom area on the canvas
         x1 = self.mouse_x - 50
         y1 = self.mouse_y - 50
         x2 = self.mouse_x + 50
         y2 = self.mouse_y + 50
-        self.zoom_rect_id = self.image_canvas.create_rectangle(x1, y1, x2, y2, outline="red")
+        self.zoom_rect_id = self.image_canvas.create_rectangle(
+            x1, y1, x2, y2, outline="red")
 
         if self.zoom_rect_id:
-        # Hide the zoom rectangle
+            # Hide the zoom rectangle
             self.image_canvas.itemconfigure(self.zoom_rect_id, state='hidden')
 
         if self.image and self.zoom_canvas:
@@ -264,23 +274,61 @@ class ImageViewer(tk.Frame):
             x2 = self.mouse_x + 50
             y2 = self.mouse_y + 50
             self.image_canvas.coords(self.zoom_rect_id, x1, y1, x2, y2)
-        
-
 
     def update_zoom_image(self):
         # Update the zoom window image
-
         x = int(self.zoom_center_x - 100 / self.zoom_factor)
         y = int(self.zoom_center_y - 100 / self.zoom_factor)
         x1 = max(x, 0)
         y1 = max(y, 0)
         x2 = min(x + 200 // self.zoom_factor, self.image.width)
         y2 = min(y + 200 // self.zoom_factor, self.image.height)
+
+        # add padding if the zoomed image is not complete
+        if x2 == self.image.width and x1 > 0:
+            x1 = max(x1 - (x2 - self.image.width) - 1, 0)
+        if y2 == self.image.height and y1 > 0:
+            y1 = max(y1 - (y2 - self.image.height) - 1, 0)
+
         self.zoom_image = self.image.crop((x1, y1, x2, y2))
         self.zoom_image = self.zoom_image.resize((200, 200), Image.BILINEAR)
-        self.zoom_image_tk = ImageTk.PhotoImage(self.zoom_image)
-        self.zoom_canvas.create_image(0, 0, anchor="nw", image=self.zoom_image_tk)
 
+        left_pad = 0
+        right_pad = 0
+        top_pad = 0
+        bottom_pad = 0
+        # add one pixel padding if the zoomed image is not complete
+        if x2 - x1 < 200 or y2 - y1 < 200:
+            if self.mouse_x <= 250:
+                left_pad = abs(200 - (x2-x1))
+            else:
+                right_pad = abs(200 - (x2-x1))
+
+            if self.mouse_y <= 250:
+                top_pad = abs(200 - (y2-y1))
+            else:
+                bottom_pad = abs(200 - (y2-y1))
+
+            self.zoom_image = ImageOps.expand(
+                self.zoom_image, border=(left_pad - right_pad, top_pad-bottom_pad, right_pad, bottom_pad), fill='white')
+
+
+        self.zoom_image_tk = ImageTk.PhotoImage(self.zoom_image)
+        self.zoom_canvas.create_image(
+            0, 0, anchor="nw", image=self.zoom_image_tk)
+
+        # Draw a crosshair in the center of the zoom window
+        x1 = 0
+        y1 = 100
+        x2 = 200 
+        y2 = 100
+        self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
+
+        x1 = 100
+        y1 = 0
+        x2 = 100
+        y2 = 200
+        self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
 
     def zoom_in(self):
         # Increase the zoom factor and update the zoom window
@@ -304,8 +352,10 @@ class ImageViewer(tk.Frame):
     def save_to_clipboard(self):
         # Copy the coordinates and RGB values to the clipboard
         if self.image:
-            x = int((self.mouse_x - self.x_center) / self.zoom_factor + self.x_center)
-            y = int((self.mouse_y - self.y_center) / self.zoom_factor + self.y_center)
+            x = int((self.mouse_x - self.x_center) /
+                    self.zoom_factor + self.x_center)
+            y = int((self.mouse_y - self.y_center) /
+                    self.zoom_factor + self.y_center)
             if x >= self.x_min and x <= self.x_max and y >= self.y_min and y <= self.y_max:
                 pixel = self.image.getpixel((x, y))
                 if len(pixel) >= 3:
@@ -315,8 +365,8 @@ class ImageViewer(tk.Frame):
                     r, g, b, *_ = self.image.getpixel((x, y))
                     # handle the case where the pixel values are not RGB
                 coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0f);"
-                rgb = f"glColor3f({r}f, {g}f, {b}f);"
-                text = "{}\n{}".format(rgb,coords)
+                rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
+                text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
 
@@ -330,15 +380,17 @@ class ImageViewer(tk.Frame):
         about_window.iconbitmap(filePath)
 
         # Add a label with the program name and version
-        label1 = tk.Label(about_window, text="Glut Image Coordinator v1.0")
+        label1 = tk.Label(about_window, text="Glut Image Coordinator v1.1")
         label1.pack(pady=10)
 
         # Add a label with the developer name and email
-        label2 = tk.Label(about_window, text="Developed by Jahid Hasan\nEmail: vdjsovaj@gmail.com")
-        label2.pack(padx=10,pady=10)
+        label2 = tk.Label(
+            about_window, text="Developed by Jahid Hasan\nEmail: vdjsovaj@gmail.com")
+        label2.pack(padx=10, pady=10)
 
         # Add a button to close the about dialog
-        close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
+        close_button = tk.Button(
+            about_window, text="Close", command=about_window.destroy)
         close_button.pack(pady=10)
 
     def on_contact_us_click(self):
@@ -350,12 +402,14 @@ class ImageViewer(tk.Frame):
         filePath = resource_path("img/icon.ico")
         top.iconbitmap(filePath)
         # Add some text to the window
-        Label(top, text="For support or inquiries, please email us at:").pack(padx=10,pady=10)
+        Label(top, text="For support or inquiries, please email us at:").pack(
+            padx=10, pady=10)
         Label(top, text="vdjsovaj@gmail.com").pack()
         Label(top, text="We usually respond within 24 hours.").pack()
 
         # Add a button to close the window
-        Button(top, text="Close", command=top.destroy).pack(padx=10,pady=10)
+        Button(top, text="Close", command=top.destroy).pack(padx=10, pady=10)
+
 
 def resource_path(relative_path):
     try:
@@ -364,6 +418,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
 
 if __name__ == "__main__":
     try:
