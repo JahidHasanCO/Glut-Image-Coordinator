@@ -12,8 +12,9 @@ This project is useful for those who work with images and want a quick way to de
 -   Copy code easily by pressing CTRL + X
 
 ### Screenshots
-![Main Window](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/main.png)
-![enter image description here](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/copy.png)
+| Main Window | Copy Window |
+| ------ | ------ |
+| ![Main Window](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/main.png) | ![Copy Window](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/copy.png) |
 
 
 ### How to Use
