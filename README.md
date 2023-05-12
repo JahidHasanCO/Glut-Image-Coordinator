@@ -15,6 +15,42 @@ This project is useful for those who work with images and want a quick way to de
 ![Main Window](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/main.png)
 ![enter image description here](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/copy.png)
 
+
+### How to Use
+```cpp
+#include<windows.h>
+#include <GL/glut.h>
+
+void display(){
+    glClear(GL_COLOR_BUFFER_BIT);
+    // write your code here 
+    glutSwapBuffers();
+}
+
+
+int main(int argc, char **argv){
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+
+    glutInitWindowSize(500, 500);
+    glutCreateWindow("Glut Image Coordinator");
+    glClearColor(0.502f, 0.502f, 0.702f, 1.0f);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}
+```
+here 
+
+```cpp glutInitWindowSize(500, 500);``` window size is ```500x500px```.
+
+```cpp gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);``` for coordinate rang 0-1.
+now you can select postion from app and paste here.
+
 ### License
 ```
 MIT License
