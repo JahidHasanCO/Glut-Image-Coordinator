@@ -1,4 +1,6 @@
+![GitHub Cards Preview](ART/cover.png)
 
+# Glut Image Coordinator
 **GlutImageCoordinator** is a simple image viewer  that allows users to open images, view the coordinates and RGB color codes of specific positions by moving the cursor over the image, and copy the glut vertex and color code by clicking on a point. Additionally, users can easily copy the code by pressing CTRL + X.
 
 This project is useful for those who work with images and want a quick way to determine the coordinates and color codes of specific points in an image. The program is built using the OpenGL Utility Toolkit (GLUT) library and supports various image formats such as PNG, JPG, and BMP.
