@@ -46,9 +46,9 @@ int main(int argc, char **argv){
 ```
 here 
 
-```cpp glutInitWindowSize(500, 500);``` window size is ```500x500px```.
+```glutInitWindowSize(500, 500);``` window size is ```500x500px```.
 
-```cpp gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);``` for coordinate rang 0-1.
+```gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);``` for coordinate rang 0-1.
 now you can select postion from app and paste here.
 
 ### License
