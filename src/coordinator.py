@@ -7,6 +7,16 @@ import pyperclip
 import os
 import sys
 import tkinter.ttk as ttk
+import configparser
+from util.get_resource import *
+from util.normalization import normalizeValue
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name
+from pygments.formatters import get_formatter_by_name
+
+graph_max = 1
+graph_min = 0
+
 
 def darkstyle(root):
     style = ttk.Style(root)
@@ -15,16 +25,22 @@ def darkstyle(root):
     style.theme_use('forest-light')
     return style
 
+
 class ImageViewer(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         self.master = master
-        self.style = darkstyle(self.master)
+        if "forest-light" not in ttk.Style().theme_names():
+            self.style = darkstyle(self.master)
         self.master.title("Glut Image Coordinator")
         # self.master.config(bg="skyblue")
         self.master.geometry("500x736")
         self.master.minsize(500, 736)
         self.master.maxsize(500, 736)
+
+        # Load configuration file
+        self.config = configparser.ConfigParser()
+        self.config.read('config.ini')
         # Creating Menubar
         menubar = Menu(master)
 
@@ -33,10 +49,17 @@ class ImageViewer(tk.Frame):
         menubar.add_cascade(label='File', menu=file)
         file.add_command(label='New Window', command=self.create_new_window)
         file.add_command(label='Open Image...', command=self.upload_image)
-        file.add_command(label='Close Image', command=self.upload_placeholder_image)
+        file.add_command(label='Close Image',
+                         command=self.upload_placeholder_image)
         file.add_separator()
         file.add_command(label='Exit', command=master.destroy)
 
+        setting = Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Settings', menu=setting)
+        setting.add_command(label='Set Graph Range',
+                            command=self.open_graph_range_setting)
+        setting.add_command(label='Copy Template Code',
+                            command=self.templateCodeWindow)
         # Adding Help Menu
         help_ = Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Help', menu=help_)
@@ -80,8 +103,8 @@ class ImageViewer(tk.Frame):
         self.width = 0.0
 
         self.dialogBox = ttk.LabelFrame(
-            master=self.master,text='Output Window' ,relief="solid")
-        self.dialogBox.pack(fill=X, padx=2,pady=2)
+            master=self.master, text='Output Window', relief="solid")
+        self.dialogBox.pack(fill=X, padx=2, pady=2)
 
         self.zoom_canvas = tk.Canvas(
             self.dialogBox, width=200, height=200, borderwidth=1, relief="solid")
@@ -98,26 +121,26 @@ class ImageViewer(tk.Frame):
         self.height_var.set("Image Height: 0")
         self.height_label = ttk.Label(
             self.dialogBox, textvariable=self.height_var, font=("Helvetica", 12))
-        self.height_label.pack(fill=X, padx=10, pady= 2)
+        self.height_label.pack(fill=X, padx=10, pady=2)
 
         # Create a label to display the width of the image
         self.width_var = tk.StringVar()
         self.width_var.set("Image Width: 0")
         self.width_label = ttk.Label(
             self.dialogBox, textvariable=self.width_var, font=("Helvetica", 12))
-        self.width_label.pack(fill=X, padx=10 , pady= 2)
+        self.width_label.pack(fill=X, padx=10, pady=2)
 
         self.coord_var = tk.StringVar()
         self.coord_var.set("X-Axis=0, Y-Axis=0")
         coord_label = ttk.Label(
             self.dialogBox, textvariable=self.coord_var, font=("Helvetica", 12))
-        coord_label.pack(fill=X, padx=10, pady= 2)
+        coord_label.pack(fill=X, padx=10, pady=2)
 
         self.rgb_var = tk.StringVar()
         self.rgb_var.set("R=0, G=0, B=0")
         rgb_label = ttk.Label(
             self.dialogBox, textvariable=self.rgb_var, font=("Helvetica", 12))
-        rgb_label.pack(fill=X, padx=10, pady= 2)
+        rgb_label.pack(fill=X, padx=10, pady=2)
 
         self.upload_placeholder_image()
 
@@ -193,8 +216,11 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Update the coordinate text
-        self.coord_var.set("X-Axis={}, Y-Axis={}".format(round(
-            (self.mouse_x / 500), 4), round((self.image_canvas.winfo_height() - event.y) / 500, 4)))
+        # self.coord_var.set("X-Axis={}, Y-Axis={}".format(round(
+        #     (self.mouse_x / 500), 4), round((self.image_canvas.winfo_height() - event.y) / 500, 4)))
+
+        self.coord_var.set("X-Axis={}, Y-Axis={}".format(normalizeValue(self.mouse_x / 500),
+                           normalizeValue((self.image_canvas.winfo_height() - event.y) / 500)))
 
         # Update the RGB text
         if self.image:
@@ -203,11 +229,15 @@ class ImageViewer(tk.Frame):
             y = int((self.mouse_y - self.y_center) /
                     self.zoom_factor + self.y_center)
             if x >= 0 and x < self.image.width and y >= 0 and y < self.image.height:
-                pixel = self.image.getpixel((x, y))
-                if len(pixel) >= 3:
-                    r, g, b = pixel[:3]
-                    self.rgb_var.set("R={}, G={}, B={}".format(
-                        round(r/255, 4), round(g/255, 4), round(b/255, 4)))
+                try:
+                    pixel = self.image.getpixel((x, y))
+                    if len(pixel) >= 3:
+                        r, g, b = pixel[:3]
+                        self.rgb_var.set("R={}, G={}, B={}".format(
+                            round(r/255, 4), round(g/255, 4), round(b/255, 4)))
+                except IndexError:
+                    self.rgb_var.set("Error R={}, G={}, B={}".format(
+                        round(0/255, 4), round(0/255, 4), round(0/255, 4)))
 
         # Update the zoom window if it exists
         if self.zoom_canvas:
@@ -223,19 +253,23 @@ class ImageViewer(tk.Frame):
             y = int((self.mouse_y - self.y_center) /
                     self.zoom_factor + self.y_center)
             if x >= self.x_min and x <= self.x_max and y >= self.y_min and y <= self.y_max:
-                pixel = self.image.getpixel((x, y))
-                if len(pixel) >= 3:
-                    r, g, b = pixel[:3]
-                    # rest of the code
-                else:
-                    r, g, b, *_ = self.image.getpixel((x, y))
-                    # handle the case where the pixel values are not RGB
-                coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0.0f);"
+                try:
+                    pixel = self.image.getpixel((x, y))
+                    if len(pixel) >= 3:
+                        r, g, b = pixel[:3]
+                        # rest of the code
+                    else:
+                        r, g, b, *_ = self.image.getpixel((x, y))
+                        # handle the case where the pixel values are not RGB
+                except IndexError:
+                    r = 0
+                    g = 0
+                    b = 0
+                coords = f"glVertex3f({normalizeValue(x/500)}f, {normalizeValue((self.image_canvas.winfo_height() - y)/500)}f , 0.0f);"
                 rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
                 text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
-                
 
     def on_mouse_release(self, event):
         # Stop dragging the zoom rectangle
@@ -321,7 +355,6 @@ class ImageViewer(tk.Frame):
             self.zoom_image = ImageOps.expand(
                 self.zoom_image, border=(left_pad - right_pad, top_pad-bottom_pad, right_pad, bottom_pad), fill='white')
 
-
         self.zoom_image_tk = ImageTk.PhotoImage(self.zoom_image)
         self.zoom_canvas.create_image(
             0, 0, anchor="nw", image=self.zoom_image_tk)
@@ -329,7 +362,7 @@ class ImageViewer(tk.Frame):
         # Draw a crosshair in the center of the zoom window
         x1 = 0
         y1 = 100
-        x2 = 200 
+        x2 = 200
         y2 = 100
         self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
 
@@ -366,19 +399,23 @@ class ImageViewer(tk.Frame):
             y = int((self.mouse_y - self.y_center) /
                     self.zoom_factor + self.y_center)
             if x >= self.x_min and x <= self.x_max and y >= self.y_min and y <= self.y_max:
-                pixel = self.image.getpixel((x, y))
-                if len(pixel) >= 3:
-                    r, g, b = pixel[:3]
-                    # rest of the code
-                else:
-                    r, g, b, *_ = self.image.getpixel((x, y))
-                    # handle the case where the pixel values are not RGB
-                coords = f"glVertex3f({x/500}f, {(self.image_canvas.winfo_height() - y)/500}f , 0.0f);"
+                try:
+                    pixel = self.image.getpixel((x, y))
+                    if len(pixel) >= 3:
+                        r, g, b = pixel[:3]
+                        # rest of the code
+                    else:
+                        r, g, b, *_ = self.image.getpixel((x, y))
+                        # handle the case where the pixel values are not RGB
+                except IndexError:
+                    r = 0
+                    g = 0
+                    b = 0
+                coords = f"glVertex3f({normalizeValue(x/500)}f, {normalizeValue((self.image_canvas.winfo_height() - y)/500)}f , 0.0f);"
                 rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
                 text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
-
 
     def show_about_dialog(self):
         # Create a Toplevel window for the about dialog
@@ -390,7 +427,8 @@ class ImageViewer(tk.Frame):
         about_window.iconbitmap(filePath)
 
         # Add a label with the program name and version
-        label1 = ttk.Label(about_window, text="Glut Image Coordinator v1.2" , font=("Helvetica", 14))
+        label1 = ttk.Label(
+            about_window, text="Glut Image Coordinator v1.2", font=("Helvetica", 14))
         label1.pack(pady=10)
 
         # Add a label with the developer name and email
@@ -412,24 +450,125 @@ class ImageViewer(tk.Frame):
         filePath = resource_path("img/icon.ico")
         top.iconbitmap(filePath)
         # Add some text to the window
-        ttk.Label(top, text="For support or inquiries, please email us at:" , font=("Helvetica", 14)).pack(
+        ttk.Label(top, text="For support or inquiries, please email us at:", font=("Helvetica", 14)).pack(
             padx=10, pady=10)
-        ttk.Label(top, text="vdjsovaj@gmail.com" , font=("Helvetica", 12)).pack()
-        ttk.Label(top, text="We usually respond within 24 hours." , font=("Helvetica", 12)).pack()
+        ttk.Label(top, text="vdjsovaj@gmail.com",
+                  font=("Helvetica", 12)).pack()
+        ttk.Label(top, text="We usually respond within 24 hours.",
+                  font=("Helvetica", 12)).pack()
 
         # Add a button to close the window
-        ttk.Button(top, text="Close", command=top.destroy).pack(padx=10, pady=10)
+        ttk.Button(top, text="Close", command=top.destroy).pack(
+            padx=10, pady=10)
+
+    def open_graph_range_setting(self):
+        # Create a new Toplevel window for the Contact Us dialog
+        top = tk.Toplevel(self.master)
+        top.minsize(400, 200)
+        top.maxsize(400, 200)
+        top.title("Graph Range Setting")
+        filePath = resource_path("img/icon.ico")
+        top.iconbitmap(filePath)
+
+        if not self.config.has_section('graph'):
+            self.config.add_section('graph')
+
+        # Get initial values for graph_max and graph_min
+        graph_max = self.config.getint('graph', 'max', fallback=1)
+        graph_min = self.config.getint('graph', 'min', fallback=0)
+
+        # Create a ttk.Scale widget with a range of 0 to 100
+
+        ttk.Label(top, text="Set Graph Max Value", font=(
+            "Helvetica", 12)).pack(fill=X, padx=20, pady=2)
+        self.graph_max_scale = ttk.Scale(
+            top, from_=1.0, to=100.0, command=lambda x: self.on_graph_max_scale_scroll(x))
+        self.maxVar = tk.StringVar()
+        self.maxVar.set(f"Graph max: {graph_max}")
+        self.graph_max_scale.set(float(graph_max))
+        # Pack the Scale widget into the window
+        self.graph_max_scale.pack(fill=X, padx=20, pady=2)
+
+        self.graph_max_label = ttk.Label(top,
+                                         textvariable=self.maxVar, font=("Helvetica", 10))
+        self.graph_max_label.pack(fill=X, padx=20, pady=2)
+
+        ttk.Label(top, text="Set Graph Min Value", font=(
+            "Helvetica", 12)).pack(fill=X, padx=20, pady=2)
+
+        self.graph_min_scale = ttk.Scale(
+            top, from_=0.0, to=100.0, command=lambda x: self.on_graph_min_scale_scroll(x))
+        self.minVar = tk.StringVar()
+        self.minVar.set(f"Graph min: {0 - graph_min}")
+        self.graph_min_scale.set(float(graph_min))
+        # Pack the Scale widget into the window
+        self.graph_min_scale.pack(fill=X, padx=20, pady=2)
+
+        self.graph_min_label = ttk.Label(top,
+                                         textvariable=self.minVar, font=("Helvetica", 10))
+        self.graph_min_label.pack(fill=X, padx=20, pady=2)
+
+        # Add a button to close the window
+        ttk.Button(top, text="Save", command=lambda: self.on_graph_setting_save_click(top)).pack(
+            padx=10, pady=10)
+
+    def on_graph_max_scale_scroll(self, x):
+        self.maxVar.set(f"Graph max: {int(float(x))}")
+
+    def on_graph_min_scale_scroll(self, x):
+        self.minVar.set(f"Graph min: {0 - int(float(x))}")
+
+    def on_graph_setting_save_click(self, top):
+        graph_max = int(self.graph_max_scale.get())
+        graph_min = int(self.graph_min_scale.get())
+        # Save values to configuration file
+        # Save values to configuration file
+        self.config.set('graph', 'max', str(graph_max))
+        self.config.set('graph', 'min', str(graph_min))
+        with open('config.ini', 'w') as f:
+            self.config.write(f)
+        top.destroy()
+
+    def templateCodeWindow(self):
+        top = tk.Toplevel(self.master)
+        top.geometry("500x400")
+        top.minsize(500, 400)
+        top.maxsize(500, 400)
+        top.title("Template Code")
+        filePath = resource_path("img/icon.ico")
+        top.iconbitmap(filePath)
+
+        sample_code_text = '''
+            #include<windows.h>
+            #include <GL/glut.h>
+
+            void display(){
+                glClear(GL_COLOR_BUFFER_BIT);
+                // write your code here 
+                glutSwapBuffers();
+            }
 
 
-def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
+            int main(int argc, char **argv){
+                glutInit(&argc, argv);
+                glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 
-    return os.path.join(base_path, relative_path)
-
-
+                glutInitWindowSize(500, 500);
+                glutCreateWindow("Glut Image Coordinator");
+                glClearColor(0.502f, 0.502f, 0.702f, 1.0f);
+                glMatrixMode(GL_PROJECTION);
+                glLoadIdentity();
+                gluOrtho2D(0.0f, 1.0f, 0.0f, 1.0f);
+                glMatrixMode(GL_MODELVIEW);
+                glutDisplayFunc(display);
+                glutMainLoop();
+                return 0;
+            }
+            '''
+        sample_code = tk.Text(top, wrap="word")
+        sample_code.pack(fill="both", expand=True)
+        sample_code.insert(tk.END, sample_code_text)
+        
 if __name__ == "__main__":
     try:
         root = tk.Tk()
