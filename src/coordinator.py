@@ -428,7 +428,7 @@ class ImageViewer(tk.Frame):
 
         # Add a label with the program name and version
         label1 = ttk.Label(
-            about_window, text="Glut Image Coordinator v1.2", font=("Helvetica", 14))
+            about_window, text="Glut Image Coordinator v1.3", font=("Helvetica", 14))
         label1.pack(pady=10)
 
         # Add a label with the developer name and email
