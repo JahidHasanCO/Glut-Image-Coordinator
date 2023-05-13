@@ -41,9 +41,7 @@ jobs:
         with:
           script-name: src/coordinator.py
           windows-icon-from-ico: src/img/icon.png
-          include-package: src/img
-          include-package: src/theme
-          include-package: src/util
+          include-package: src/img, src/theme, src/util
           onefile: true
           standalone: true
           disable-console: true
