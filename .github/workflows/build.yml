@@ -40,12 +40,17 @@ jobs:
       - uses: Nuitka/Nuitka-Action@v0.5
         with:
           script-name: src/coordinator.py
-          icon: src/img/icon.png
-          add-img: src/img
-          add-theme: src/theme
-          add-util: src/util
+          windows-icon-from-ico: src/img/icon.png
+          include-package: src/img
+          include-package: src/theme
+          include-package: src/util
           onefile: true
           standalone: true
+          disable-console: true
+          windows-company-name: "JahidHasanCo"
+          windows-product-name: "Glut Image Coordinator"
+          windows-file-version: "1.3"
+          windows-product-version:"1.3"
           enable-plugins: tk-inter
           # macos-create-app-bundle: ${{ runner.os == 'macOS' }}
           
