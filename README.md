@@ -14,7 +14,7 @@ This project is useful for those who work with images and want a quick way to de
 ### Screenshots
 | Main Window | Copy Window |
 | ------ | ------ |
-| ![Main Window](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/main.png) | ![Copy Window](https://github.com/JahidHasanCO/GlutImageCoordinator/blob/main/ART/copy.png) |
+| ![Main Window](ART/main.png) | ![Copy Window](ART/copy.png) |
 
 
 ### How to Use
