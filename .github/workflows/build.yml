@@ -40,6 +40,10 @@ jobs:
       - uses: Nuitka/Nuitka-Action@v0.5
         with:
           script-name: src/coordinator.py
+          icon: src/img/icon.png
+          add-img: src/img
+          add-theme: src/theme
+          add-util: src/util
           onefile: true
           standalone: true
           enable-plugins: tk-inter
