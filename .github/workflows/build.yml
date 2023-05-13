@@ -35,7 +35,7 @@ jobs:
             **/requirements*.txt
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt -r requirements-dev.txt      
+          pip install -r requirements.txt -r requirements.txt      
       # Build python script into a stand-alone exe
       - uses: Nuitka/Nuitka-Action@v0.5
         with:
