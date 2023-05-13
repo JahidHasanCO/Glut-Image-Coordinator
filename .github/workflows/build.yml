@@ -30,7 +30,7 @@ jobs:
       - name: Install PyInstaller
         run: pip install pyinstaller
       - name: Build executable
-        run: pyinstaller --noconfirm --onefile --windowed --icon "src/img/icon.ico" --add-data "src/img/;img" --add-data "src/theme/;theme" --add-data "src/util/;util"  "src/coordinator.py"
+        run: pyinstaller --noconfirm --onefile --windowed --icon "src/img/icon.ico" --add-data "src/img/*;img" --add-data "src/theme/*;theme" --add-data "src/util/*;util"  "src/coordinator.py"
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
