@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Glut Image Coordinator</title>
+    <style>
+      .image-container {
+        position: relative;
+        width: 500px;
+        height: 500px;
+        margin: 20px auto;
+      }
+      .image {
+        width: 100%;
+        height: 100%;
+      }
+
+      .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        font-size: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        pointer-events: none;
+      }
+
+      .zoom-window {
+        position: fixed;
+        bottom: 50px;
+        right: 50px;
+        width: 200px;
+        height: 200px;
+        border: 2px solid #000;
+        background-color: #fff;
+        overflow: hidden;
+      }
+
+      .zoomed-container {
+        position: relative;
+        width: 200px;
+        height: 200px;
+      }
+
+      .zoomed-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 1px;
+        height: 100%;
+        background-color: #000;
+      }
+
+      .zoomed-overlay::after,
+      .zoomed-overlay::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        bottom: 50%;
+        right: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: #000;
+      }
+
+      .zoomed-overlay::after {
+        transform: translateX(-50%);
+      }
+
+      .zoomed-overlay::before {
+        transform: translateY(-50%);
+      }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+  <body>
+    <div class="image-container">
+      <img
+        class="image"
+        src="{{url_for('static', filename='uploaded_image.jpg') }}"
+        alt="Uploaded Image"
+      />
+      <div class="overlay"></div>
+    </div>
+
+    <form
+      id="upload-form"
+      action="/upload"
+      method="POST"
+      enctype="multipart/form-data"
+    >
+      <input type="file" name="image" accept="image/*" />
+      <input type="submit" value="Upload Image" />
+    </form>
+
+
+    <div class="zoom-window">
+      <div class="zoomed-container">
+        <div class="zoomed-overlay"></div>
+        <img
+          class="zoomed-image"
+          src="{{ url_for('static', filename='uploaded_image.jpg') }}"
+          alt="Zoomed Image"
+        />
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("upload-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent form submission
+
+          var formData = new FormData(this);
+
+          fetch("/upload", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "success") {
+                // Reload the page to display the uploaded image
+                location.reload();
+              } else {
+                alert("Error uploading image {data.status}}");
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+              alert("An error occurred while uploading the image");
+            });
+        });
+
+      $(document).ready(function () {
+        // Image hover event
+        $(document).on("mousemove", ".image", function (event) {
+          var offset = $(this).offset();
+          var x = event.pageX - offset.left;
+          var y = event.pageY - offset.top;
+          var width = $(this).width();
+          var height = $(this).height();
+          var percentX = x / width;
+          var percentY = y / height;
+
+          $.ajax({
+            url: "/get_coordinates",
+            method: "POST",
+            data: { x: percentX, y: percentY },
+            success: function (response) {
+              $(".overlay").text(response.coords);
+            },
+            error: function () {
+              $(".overlay").text("");
+            },
+          });
+
+          // Update the zoomed image position
+          var zoomedImgWidth = $(".zoomed-image").width();
+          var zoomedImgHeight = $(".zoomed-image").height();
+          var zoomWindowWidth = $(".zoom-window").width();
+          var zoomWindowHeight = $(".zoom-window").height();
+          var zoomedImgX = (x / width) * (zoomedImgWidth - zoomWindowWidth);
+          var zoomedImgY = (y / height) * (zoomedImgHeight - zoomWindowHeight);
+          $(".zoomed-image").css(
+            "transform",
+            "translate(-" + zoomedImgX + "px, -" + zoomedImgY + "px)"
+          );
+        });
+
+        // Image zoom event
+        $(".image")
+          .mouseenter(function () {
+            var imageUrl = $(this).attr("src");
+            $(".zoomed-image").attr("src", imageUrl);
+            $(".zoom-window").show();
+          })
+          .mouseleave(function () {
+            $(".zoom-window").hide();
+          });
+      });
+    </script>
+  </body>
+</html>
