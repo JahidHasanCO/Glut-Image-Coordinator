@@ -94,12 +94,13 @@ class ImageViewer(tk.Frame):
     def create_widgets(self):
 
         # Create a frame to hold the canvas and scrollbar
-        self.frame = tk.Frame(self.master)
+        self.frame = ttk.Frame(self.master)
         self.frame.grid(row=0, column=0, sticky="nsew")
 
         # Create an image canvas to display the uploaded image
         self.image_canvas = tk.Canvas(self.frame, borderwidth=1, relief="solid")
         self.image_canvas.grid(row=0, column=0)
+        self.image_canvas.config(cursor="circle")
 
         # Bind the mouse events to the canvas
         self.image_canvas.bind("<Motion>", self.on_mouse_move)
@@ -107,20 +108,20 @@ class ImageViewer(tk.Frame):
         self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
 
         # Create a scrollbar for the canvas
-        self.scrollbar = tk.Scrollbar(self.frame, orient="vertical", command=self.image_canvas.yview)
+        self.scrollbar = ttk.Scrollbar(self.frame, orient="vertical", command=self.image_canvas.yview)
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.image_canvas.config(yscrollcommand=self.scrollbar.set)
 
-        self.right_frame = tk.Frame(self.frame,width=200)
+        self.right_frame = ttk.Frame(self.frame,width=200)
         self.right_frame.grid(row=0, column=2, sticky="nsew")
 
-        self.scrollbar_h = tk.Scrollbar(self.frame, orient="horizontal", command=self.image_canvas.xview)
+        self.scrollbar_h = ttk.Scrollbar(self.frame, orient="horizontal", command=self.image_canvas.xview)
         self.scrollbar_h.grid(row=1, column=0, sticky="ew")
         self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
 
 
         # Create a frame to hold the buttons
-        self.bottom_frame = tk.Frame(self.master)
+        self.bottom_frame = ttk.Frame(self.master)
         self.bottom_frame.grid(row=1, column=0, sticky="nsew")
 
         self.zoom_canvas = tk.Canvas(
@@ -166,7 +167,6 @@ class ImageViewer(tk.Frame):
         self.master.rowconfigure(0, weight=1)
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(0, weight=1)
-
         self.bottom_output_frame.columnconfigure(1, weight=1)
 
         
@@ -177,11 +177,13 @@ class ImageViewer(tk.Frame):
         file_path = tk.filedialog.askopenfilename(title="Select Image", filetypes=(("JPEG files", "*.jpg"), ("PNG files", "*.png"), ("All files", "*.*")))
         if file_path:
             # Load the image and add it to the canvas
-            image = Image.open(file_path)
-            self.image = ImageTk.PhotoImage(image)
+            self.image = Image.open(file_path)
+            self.image_tk = ImageTk.PhotoImage(self.image)
+            self.image_id = self.image_canvas.create_image(
+            0, 0, anchor="nw", image=self.image_tk)
+            self.image_canvas.config(width=self.image.width, height=self.image.height)
             self.image_canvas.delete("all")
             self.image_canvas.create_image(0, 0, anchor="nw", image=self.image)
-            self.image_canvas.config(width=image.width, height=image.height)
             self.image_canvas.config(scrollregion=self.image_canvas.bbox(tk.ALL))
             # Add the horizontal scrollbar
             self.scrollbar_h.config(command=self.image_canvas.xview)
@@ -193,8 +195,9 @@ class ImageViewer(tk.Frame):
             # Update the height and width labels with the image size
             self.height = self.image.height
             self.width = self.image.width
-            self.height_var.set("Height: {}".format(self.image.height))
-            self.width_var.set("Width: {}".format(self.image.width))
+            self.height_var.set("Height: {}".format(self.height))
+            self.width_var.set("Width: {}".format(self.width))
+            
 
     def upload_placeholder_image(self):
         # Open a file dialog to select an image file
@@ -234,11 +237,8 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Update the coordinate text
-        # self.coord_var.set("X-Axis={}, Y-Axis={}".format(round(
-        #     (self.mouse_x / 500), 4), round((self.image_canvas.winfo_height() - event.y) / 500, 4)))
-
-        self.coord_var.set("X-Axis={}, Y-Axis={}".format(normalizeValue(self.mouse_x / 500),
-                           normalizeValue((self.image_canvas.winfo_height() - event.y) / 500)))
+        self.coord_var.set("X-Axis={}, Y-Axis={}".format(normalizeValue(self.mouse_x / self.width),
+                        normalizeValue((self.height - self.mouse_y) / self.height)))
 
         # Update the RGB text
         if self.image:
@@ -260,6 +260,8 @@ class ImageViewer(tk.Frame):
         # Update the zoom window if it exists
         if self.zoom_canvas:
             self.update_zoom_window()
+
+
 
     def on_mouse_press(self, event):
         if self.zoom_rect_id and self.image:
