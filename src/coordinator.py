@@ -1,11 +1,9 @@
 import tkinter as tk
-from tkinter import Menu, Frame, BOTTOM, X, Label, Toplevel, Button
+from tkinter import Menu, X, Label, Toplevel
 from tkinter import messagebox
 from tkinter import filedialog
 from PIL import Image, ImageTk, ImageOps
 import pyperclip
-import os
-import sys
 import tkinter.ttk as ttk
 import configparser
 from util.get_resource import *
@@ -89,7 +87,7 @@ class ImageViewer(tk.Frame):
 
     def create_new_window(self):
         new_window = tk.Toplevel(self.master)
-        image_viewer = ImageViewer(new_window)
+        ImageViewer(new_window)
 
     def create_widgets(self):
 
@@ -202,6 +200,8 @@ class ImageViewer(tk.Frame):
             self.image_canvas.config(width=self.width, height=self.height)
             self.image_canvas.itemconfig(self.image_id, image=self.image_tk)
 
+            self.update_coordinates()
+
     def upload_placeholder_image(self):
         # Open a file dialog to select an image file
         filePath = resource_path("img/icon.ico")
@@ -272,29 +272,36 @@ class ImageViewer(tk.Frame):
             self.update_zoom_window()
 
     def on_mouse_press(self, event):
-        if self.zoom_rect_id and self.image:
-            self.mouse_pressed = True
-            # Copy the coordinates and RGB values to the clipboard
         if self.image:
-            x = int((self.mouse_x - self.x_center) /
+            self.mouse_pressed = True
+
+            # Copy the coordinates and RGB values to the clipboard
+            x_adjusted = self.mouse_x + \
+                self.image_canvas.xview()[0] * self.image.width
+            y_adjusted = self.mouse_y + \
+                self.image_canvas.yview()[0] * self.image.height
+
+            x = int((x_adjusted - self.x_center) /
                     self.zoom_factor + self.x_center)
-            y = int((self.mouse_y - self.y_center) /
+            y = int((y_adjusted - self.y_center) /
                     self.zoom_factor + self.y_center)
-            if x >= self.x_min and x <= self.x_max and y >= self.y_min and y <= self.y_max:
+
+            if self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max:
                 try:
                     pixel = self.image.getpixel((x, y))
                     if len(pixel) >= 3:
                         r, g, b = pixel[:3]
-                        # rest of the code
                     else:
-                        r, g, b, *_ = self.image.getpixel((x, y))
-                        # handle the case where the pixel values are not RGB
+                        r, g, b, *_ = pixel
                 except IndexError:
                     r = 0
                     g = 0
                     b = 0
-                coords = f"glVertex3f({normalizeValue(x/500)}f, {normalizeValue((self.image_canvas.winfo_height() - y)/500)}f , 0.0f);"
-                rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
+
+                coords = "glVertex3f({}, {}, 0.0f);".format(normalizeValue(
+                    x / self.width), normalizeValue((self.height - y) / self.height))
+                rgb = "glColor3f({}, {}, {});".format(
+                    round(r / 255, 3), round(g / 255, 3), round(b / 255, 3))
                 text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
@@ -400,16 +407,6 @@ class ImageViewer(tk.Frame):
         y2 = 200
         self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
 
-    def zoom_in(self):
-        # Increase the zoom factor and update the zoom window
-        self.zoom_factor *= 2.0
-        self.update_zoom_window()
-
-    def zoom_out(self):
-        # Decrease the zoom factor and update the zoom window
-        self.zoom_factor /= 2.0
-        self.update_zoom_window()
-
     def set_coordinates(self, x_min, x_max, y_min, y_max, x_center, y_center):
         # Set the coordinate limits and center point
         self.x_min = x_min
@@ -419,31 +416,48 @@ class ImageViewer(tk.Frame):
         self.x_center = x_center
         self.y_center = y_center
 
+    def update_coordinate(self):
+        # Define the zoomed-in region to cover the entire image
+        self.x_min = 0
+        self.x_max = self.width - 1
+        self.y_min = 0
+        self.y_max = self.height - 1
+
+        # Center coordinates of the zoomed-in region
+        self.x_center = 0  # (self.x_min + self.x_max) / 2
+        self.y_center = 0  # (self.y_min + self.y_max) / 2
+
     def save_to_clipboard(self):
         # Copy the coordinates and RGB values to the clipboard
-        if self.image:
-            x = int((self.mouse_x - self.x_center) /
-                    self.zoom_factor + self.x_center)
-            y = int((self.mouse_y - self.y_center) /
-                    self.zoom_factor + self.y_center)
-            if x >= self.x_min and x <= self.x_max and y >= self.y_min and y <= self.y_max:
-                try:
-                    pixel = self.image.getpixel((x, y))
-                    if len(pixel) >= 3:
-                        r, g, b = pixel[:3]
-                        # rest of the code
-                    else:
-                        r, g, b, *_ = self.image.getpixel((x, y))
-                        # handle the case where the pixel values are not RGB
-                except IndexError:
-                    r = 0
-                    g = 0
-                    b = 0
-                coords = f"glVertex3f({normalizeValue(x/500)}f, {normalizeValue((self.image_canvas.winfo_height() - y)/500)}f , 0.0f);"
-                rgb = f"glColor3f({round(r/225,3)}f, {round(g/225,3)}f, {round(b/225,3)}f);"
-                text = "{}\n{}".format(rgb, coords)
-                pyperclip.copy(text)
-                messagebox.showinfo("Code Copied", text)
+        x_adjusted = self.mouse_x + \
+            self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + \
+            self.image_canvas.yview()[0] * self.image.height
+
+        x = int((x_adjusted - self.x_center) /
+                self.zoom_factor + self.x_center)
+        y = int((y_adjusted - self.y_center) /
+                self.zoom_factor + self.y_center)
+
+        if self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max:
+            try:
+                pixel = self.image.getpixel((x, y))
+                if len(pixel) >= 3:
+                    r, g, b = pixel[:3]
+                else:
+                    r, g, b, *_ = pixel
+            except IndexError:
+                r = 0
+                g = 0
+                b = 0
+
+            coords = "glVertex3f({}, {}, 0.0f);".format(normalizeValue(
+                x / self.width), normalizeValue((self.height - y) / self.height))
+            rgb = "glColor3f({}, {}, {});".format(
+                round(r / 255, 3), round(g / 255, 3), round(b / 255, 3))
+            text = "{}\n{}".format(rgb, coords)
+            pyperclip.copy(text)
+            messagebox.showinfo("Code Copied", text)
 
     def show_about_dialog(self):
         # Create a Toplevel window for the about dialog
@@ -604,10 +618,8 @@ if __name__ == "__main__":
         filePath = resource_path("img/icon.ico")
         root.iconbitmap(filePath)
         app = ImageViewer(master=root)
-        app.set_coordinates(0, 700, 0, 700, 0, 0)
+        app.set_coordinates(0, 500, 0, 500, 0, 0)
         root.bind("<Control-x>", lambda event: app.save_to_clipboard())
-        # root.bind("<Control-=>", lambda event: app.zoom_in())
-        # root.bind("<Control-minus>", lambda event: app.zoom_out())
         app.mainloop()
     except Exception as e:
         print("An error occurred: ", e)
