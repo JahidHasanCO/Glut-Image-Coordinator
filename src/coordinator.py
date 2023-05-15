@@ -8,7 +8,7 @@ import tkinter.ttk as ttk
 import configparser
 from util.get_resource import *
 from util.normalization import normalizeValue
-from ctypes import windll
+from tkinter import colorchooser
 
 graph_max = 1
 graph_min = 0
@@ -63,11 +63,18 @@ class ImageViewer(tk.Frame):
         self.height = 0.0
         self.width = 0.0
         self.tool = TOOL_SELECTOR
+        # Inside the create_toolbar method
+        self.selector_icon = tk.PhotoImage(file=resource_path("img/mouse.png"))
+        self.pen_icon = tk.PhotoImage(file=resource_path("img/pen.png"))
+        self.hand_icon = tk.PhotoImage(file=resource_path("img/hand.png"))
+        self.color_selector_icon = tk.PhotoImage(file=resource_path("img/colorPicker.png"))
+
         # Initialize pen drawing variables
         self.drawing = False
         self.prev_x = None
         self.prev_y = None
-        self.selected_color = "black"  # Initial color
+        self.selected_color = "#000000"
+        self.pixels = {}
         self.background_color = "white"
 
         # Adding File Menu and commands
@@ -106,7 +113,7 @@ class ImageViewer(tk.Frame):
     def create_widgets(self):
 
         # Create a frame to hold the canvas and scrollbar
-        self.frame = ttk.Frame(self.master)
+        self.frame = tk.Frame(self.master, bg="lightgray")
         self.frame.grid(row=0, column=0, sticky="nsew")
 
     # Create the left frame
@@ -115,14 +122,28 @@ class ImageViewer(tk.Frame):
 
         # Create tool buttons
         self.selector_button = tk.Button(
-            self.left_frame, text="Selector", command=lambda: self.set_tool(TOOL_SELECTOR))
-        self.selector_button.grid(row=0, column=0, sticky="ew")
+            self.left_frame, text="", image=self.selector_icon, command=lambda: self.set_tool(TOOL_SELECTOR))
+        self.selector_button.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
         self.pen_button = tk.Button(
-            self.left_frame, text="Pen", command=lambda: self.set_tool(TOOL_PEN))
-        self.pen_button.grid(row=1, column=0, sticky="ew")
+            self.left_frame, text="",image=self.pen_icon,  command=lambda: self.set_tool(TOOL_PEN))
+        self.pen_button.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
         self.hand_button = tk.Button(
-            self.left_frame, text="Hand", command=lambda: self.set_tool(TOOL_HAND))
-        self.hand_button.grid(row=2, column=0, sticky="ew")
+            self.left_frame, text="",image=self.hand_icon,  command=lambda: self.set_tool(TOOL_HAND))
+        self.hand_button.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
+
+        self.color_selector = tk.Button(
+            self.left_frame, text="", image=self.color_selector_icon,command=lambda: self.set_tool(TOOL_COLOR_SELECTOR))
+        self.color_selector.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
+
+        # Inside the create_toolbar method
+        button_width = self.selector_icon.width() + 10  # Add padding
+        button_height = self.selector_icon.height() + 10  # Add padding
+
+        self.selector_button.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
+        self.pen_button.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
+        self.hand_button.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
+        self.color_selector.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
+
 
         # Create an image canvas to display the uploaded image
         self.image_canvas = tk.Canvas(
@@ -134,7 +155,8 @@ class ImageViewer(tk.Frame):
         self.image_canvas.bind("<Motion>", self.on_mouse_move)
         self.image_canvas.bind("<ButtonPress-1>", self.on_mouse_press)
         self.image_canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
+        self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release) 
+
 
         # Create a canvas with the specified size
         self.canvas_width = tk.IntVar()
@@ -251,6 +273,16 @@ class ImageViewer(tk.Frame):
         # Draw center vertical line
         self.image_canvas.create_line(
             self.width/2, 0, self.width/2, self.height, fill="black")
+        
+        # Configure the canvas scroll region and scrollbar commands
+
+        self.image_canvas.config(
+                scrollregion=self.image_canvas.bbox(tk.ALL))
+        self.scrollbar_h.config(command=self.image_canvas.xview)
+        self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
+        self.scrollbar.config(command=self.image_canvas.yview)
+        self.image_canvas.config(yscrollcommand=self.scrollbar.set)
+        
         # Close the dialog
         self.dialogNewCanvas.destroy()
 
@@ -338,6 +370,8 @@ class ImageViewer(tk.Frame):
             self.selector_button.config(relief="raised")
             self.pen_button.config(relief="raised")
             self.hand_button.config(relief="sunken")
+        elif self.tool == TOOL_COLOR_SELECTOR:
+            self.open_color_picker()
 
     def on_canvas_drag(self, event):
         if self.tool == TOOL_HAND:
@@ -348,6 +382,7 @@ class ImageViewer(tk.Frame):
                     self.prev_x, self.prev_y, event.x, event.y, fill=self.selected_color, width=2)
             self.prev_x = event.x
             self.prev_y = event.y
+
 
     def on_mouse_release(self, event):
         if self.tool == TOOL_PEN:
@@ -392,6 +427,7 @@ class ImageViewer(tk.Frame):
         if self.zoom_canvas:
             self.update_zoom_window()
 
+
     def on_mouse_press(self, event):
         if self.tool == TOOL_SELECTOR:
             if self.image:
@@ -429,16 +465,13 @@ class ImageViewer(tk.Frame):
             self.drawing = True
             self.prev_x = event.x
             self.prev_y = event.y
-
         elif self.tool == TOOL_HAND:
             self.image_canvas.scan_mark(event.x, event.y)
-        elif self.tool == TOOL_COLOR_SELECTOR:
-            self.selected_color = self.get_pixel_color(event.x, event.y)
 
-    def get_pixel_color(self, x, y):
-        pixel = self.image_canvas.gettags(
-            self.image_canvas.find_closest(x, y))[0]
-        return self.image_canvas.itemcget(pixel, "fill")
+    def open_color_picker(self):
+        color = colorchooser.askcolor(title="Select Color")
+        if color[1] is not None:
+            self.selected_color = color[1]
 
     def update_zoom_window(self):
         # Create an image for the zoom window
