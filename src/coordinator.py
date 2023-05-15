@@ -203,18 +203,34 @@ class ImageViewer(tk.Frame):
             self.image_canvas.itemconfig(self.image_id, image=self.image_tk)
 
     def upload_placeholder_image(self):
-        self.height = 500
-        self.width = 500
-         # Draw center horizontal line
-        self.image_canvas.create_line(0, self.height // 2, self.width, self.height // 2, fill="red")
-        # Draw center vertical line
-        self.image_canvas.create_line(self.width // 2, 0, self.width // 2, self.height, fill="red")
+        # Open a file dialog to select an image file
+        filePath = resource_path("img/icon.ico")
+        # Load the image and display it on the canvas
+        self.image = Image.open(filePath)
+        # crop the image to a square aspect ratio
+        width, height = self.image.size
+        if width > height:
+            left = (width - height) / 2
+            right = left + height
+            top, bottom = 0, height
+        else:
+            top = (height - width) / 2
+            bottom = top + width
+            left, right = 0, width
+        self.image = self.image.crop((left, top, right, bottom))
+
+        # resize the image to fit within the canvas
+        self.image = self.image.resize((500, 500), Image.LANCZOS)
+
+        self.image_tk = ImageTk.PhotoImage(self.image)
+        self.image_id = self.image_canvas.create_image(
+            0, 0, anchor="nw", image=self.image_tk)
 
         # Update the height and width labels with the image size
-        # self.height = self.image.height
-        # self.width = self.image.width
-        # self.height_var.set("Height: {}".format(self.image.height))
-        # self.width_var.set("Width: {}".format(self.image.width))
+        self.height = self.image.height
+        self.width = self.image.width
+        self.height_var.set("Height: {}".format(self.image.height))
+        self.width_var.set("Width: {}".format(self.image.width))
         # Resize the canvas to match the fixed size
         self.image_canvas.config(width=500, height=500)
 
@@ -223,26 +239,30 @@ class ImageViewer(tk.Frame):
         self.mouse_x = event.x
         self.mouse_y = event.y  # Invert the y-coordinate
 
+        # Calculate the adjusted coordinates based on the scroll position
+        x_adjusted = self.mouse_x + self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + self.image_canvas.yview()[0] * self.image.height
+
         # Update the coordinate text
-        self.coord_var.set("X-Axis={}, Y-Axis={}".format(normalizeValue(self.mouse_x / self.image.width),
-                                                         normalizeValue((self.image.height - self.mouse_y) / self.image.height)))
+        self.coord_var.set("X-Axis={}, Y-Axis={}".format(
+            normalizeValue(x_adjusted / self.width),
+            normalizeValue((self.height - y_adjusted) / self.height)))
 
         # Update the RGB text
         if self.image:
-            x = int((self.mouse_x - self.x_center) /
-                    self.zoom_factor + self.x_center)
-            y = int((self.mouse_y - self.y_center) /
-                    self.zoom_factor + self.y_center)
-            if x >= 0 and x < self.image.width and y >= 0 and y < self.image.height:
+            x = int((x_adjusted - self.x_center) / self.zoom_factor + self.x_center)
+            y = int((y_adjusted - self.y_center) / self.zoom_factor + self.y_center)
+            if 0 <= x < self.image.width and 0 <= y < self.image.height:
                 try:
                     pixel = self.image.getpixel((x, y))
                     if len(pixel) >= 3:
                         r, g, b = pixel[:3]
                         self.rgb_var.set("R={}, G={}, B={}".format(
-                            round(r/255, 4), round(g/255, 4), round(b/255, 4)))
+                            round(r / 255, 4), round(g / 255, 4), round(b / 255, 4)))
                 except IndexError:
                     self.rgb_var.set("Error R={}, G={}, B={}".format(
-                        round(0/255, 4), round(0/255, 4), round(0/255, 4)))
+                        round(0 / 255, 4), round(0 / 255, 4), round(0 / 255, 4)))
+
 
         # Update the zoom window if it exists
         if self.zoom_canvas:
@@ -530,7 +550,7 @@ class ImageViewer(tk.Frame):
         # Save values to configuration file
         self.config.set('graph', 'max', str(graph_max))
         self.config.set('graph', 'min', str(graph_min))
-        with open('config.ini', 'w') as f:
+        with open('coordinator.ini', 'w') as f:
             self.config.write(f)
         top.destroy()
 
@@ -581,7 +601,7 @@ if __name__ == "__main__":
         filePath = resource_path("img/icon.ico")
         root.iconbitmap(filePath)
         app = ImageViewer(master=root)
-        app.set_coordinates(0, 500, 0, 580, 0, 0)
+        app.set_coordinates(0, 700, 0, 700, 0, 0)
         root.bind("<Control-x>", lambda event: app.save_to_clipboard())
         # root.bind("<Control-=>", lambda event: app.zoom_in())
         # root.bind("<Control-minus>", lambda event: app.zoom_out())

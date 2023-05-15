@@ -3,7 +3,7 @@ import configparser
 def normalizeValue(value):
     # Load configuration file
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read('coordinator.ini')
 
     # Get initial values for graph_max and graph_min
     graph_max = config.getint('graph', 'max', fallback=1)
