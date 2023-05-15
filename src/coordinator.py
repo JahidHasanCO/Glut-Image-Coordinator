@@ -27,7 +27,7 @@ def darkstyle(root):
 class ImageViewer(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
-    
+
         self.master = master
 
         if "forest-light" not in ttk.Style().theme_names():
@@ -35,8 +35,8 @@ class ImageViewer(tk.Frame):
         self.master.title("Glut Image Coordinator")
         self.master.state('zoomed')
         # self.master.config(bg="skyblue")
-        self.master.geometry("800x600")
-
+        self.master.geometry("700x700")
+        self.master.minsize(700,700)
 
         # Load configuration file
         self.config = configparser.ConfigParser()
@@ -98,7 +98,8 @@ class ImageViewer(tk.Frame):
         self.frame.grid(row=0, column=0, sticky="nsew")
 
         # Create an image canvas to display the uploaded image
-        self.image_canvas = tk.Canvas(self.frame, borderwidth=1, relief="solid")
+        self.image_canvas = tk.Canvas(
+            self.frame, borderwidth=1, relief="solid")
         self.image_canvas.grid(row=0, column=0)
         self.image_canvas.config(cursor="circle")
 
@@ -108,17 +109,18 @@ class ImageViewer(tk.Frame):
         self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
 
         # Create a scrollbar for the canvas
-        self.scrollbar = ttk.Scrollbar(self.frame, orient="vertical", command=self.image_canvas.yview)
+        self.scrollbar = ttk.Scrollbar(
+            self.frame, orient="vertical", command=self.image_canvas.yview)
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.image_canvas.config(yscrollcommand=self.scrollbar.set)
 
-        self.right_frame = ttk.Frame(self.frame,width=200)
+        self.right_frame = ttk.Frame(self.frame, width=200)
         self.right_frame.grid(row=0, column=2, sticky="nsew")
 
-        self.scrollbar_h = ttk.Scrollbar(self.frame, orient="horizontal", command=self.image_canvas.xview)
+        self.scrollbar_h = ttk.Scrollbar(
+            self.frame, orient="horizontal", command=self.image_canvas.xview)
         self.scrollbar_h.grid(row=1, column=0, sticky="ew")
         self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
-
 
         # Create a frame to hold the buttons
         self.bottom_frame = ttk.Frame(self.master)
@@ -169,17 +171,18 @@ class ImageViewer(tk.Frame):
         self.frame.rowconfigure(0, weight=1)
         self.bottom_output_frame.columnconfigure(1, weight=1)
 
-        
         self.upload_placeholder_image()
 
     def upload_image(self):
         # Open a file dialog to select an image file
-        file_path = tk.filedialog.askopenfilename(title="Select Image", filetypes=(("JPEG files", "*.jpg"), ("PNG files", "*.png"), ("All files", "*.*")))
+        file_path = tk.filedialog.askopenfilename(title="Select Image", filetypes=(
+            ("JPEG files", "*.jpg"), ("PNG files", "*.png"), ("All files", "*.*")))
         if file_path:
             # Load the image and add it to the canvas
             self.image = Image.open(file_path)
             self.image_tk = ImageTk.PhotoImage(self.image)
-            self.image_id = self.image_canvas.create_image(0, 0, anchor="nw", image=self.image_tk)
+            self.image_id = self.image_canvas.create_image(
+                0, 0, anchor="nw", image=self.image_tk)
 
             # Update the height and width labels with the image size
             self.height = self.image.height
@@ -188,7 +191,8 @@ class ImageViewer(tk.Frame):
             self.width_var.set("Width: {}".format(self.width))
 
             # Configure the canvas scroll region and scrollbar commands
-            self.image_canvas.config(scrollregion=self.image_canvas.bbox(tk.ALL))
+            self.image_canvas.config(
+                scrollregion=self.image_canvas.bbox(tk.ALL))
             self.scrollbar_h.config(command=self.image_canvas.xview)
             self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
             self.scrollbar.config(command=self.image_canvas.yview)
@@ -197,37 +201,20 @@ class ImageViewer(tk.Frame):
             # Resize the canvas to match the image size
             self.image_canvas.config(width=self.width, height=self.height)
             self.image_canvas.itemconfig(self.image_id, image=self.image_tk)
-            
 
     def upload_placeholder_image(self):
-        # Open a file dialog to select an image file
-        filePath = resource_path("img/icon.ico")
-        # Load the image and display it on the canvas
-        self.image = Image.open(filePath)
-        # crop the image to a square aspect ratio
-        width, height = self.image.size
-        if width > height:
-            left = (width - height) / 2
-            right = left + height
-            top, bottom = 0, height
-        else:
-            top = (height - width) / 2
-            bottom = top + width
-            left, right = 0, width
-        self.image = self.image.crop((left, top, right, bottom))
-
-        # resize the image to fit within the canvas
-        self.image = self.image.resize((500, 500), Image.LANCZOS)
-
-        self.image_tk = ImageTk.PhotoImage(self.image)
-        self.image_id = self.image_canvas.create_image(
-            0, 0, anchor="nw", image=self.image_tk)
+        self.height = 500
+        self.width = 500
+         # Draw center horizontal line
+        self.image_canvas.create_line(0, self.height // 2, self.width, self.height // 2, fill="red")
+        # Draw center vertical line
+        self.image_canvas.create_line(self.width // 2, 0, self.width // 2, self.height, fill="red")
 
         # Update the height and width labels with the image size
-        self.height = self.image.height
-        self.width = self.image.width
-        self.height_var.set("Height: {}".format(self.image.height))
-        self.width_var.set("Width: {}".format(self.image.width))
+        # self.height = self.image.height
+        # self.width = self.image.width
+        # self.height_var.set("Height: {}".format(self.image.height))
+        # self.width_var.set("Width: {}".format(self.image.width))
         # Resize the canvas to match the fixed size
         self.image_canvas.config(width=500, height=500)
 
@@ -237,8 +224,8 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Update the coordinate text
-        self.coord_var.set("X-Axis={}, Y-Axis={}".format(normalizeValue(self.mouse_x / self.width),
-                        normalizeValue((self.height - self.mouse_y) / self.height)))
+        self.coord_var.set("X-Axis={}, Y-Axis={}".format(normalizeValue(self.mouse_x / self.image.width),
+                                                         normalizeValue((self.image.height - self.mouse_y) / self.image.height)))
 
         # Update the RGB text
         if self.image:
@@ -260,8 +247,6 @@ class ImageViewer(tk.Frame):
         # Update the zoom window if it exists
         if self.zoom_canvas:
             self.update_zoom_window()
-
-
 
     def on_mouse_press(self, event):
         if self.zoom_rect_id and self.image:
@@ -588,7 +573,8 @@ class ImageViewer(tk.Frame):
         sample_code = tk.Text(top, wrap="word")
         sample_code.pack(fill="both", expand=True)
         sample_code.insert(tk.END, sample_code_text)
-        
+
+
 if __name__ == "__main__":
     try:
         root = tk.Tk()
