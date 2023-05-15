@@ -36,7 +36,7 @@ class ImageViewer(tk.Frame):
         self.master.state('zoomed')
         # self.master.config(bg="skyblue")
         self.master.geometry("700x700")
-        self.master.minsize(700,700)
+        self.master.minsize(700, 700)
 
         # Load configuration file
         self.config = configparser.ConfigParser()
@@ -114,8 +114,8 @@ class ImageViewer(tk.Frame):
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.image_canvas.config(yscrollcommand=self.scrollbar.set)
 
-        self.right_frame = ttk.Frame(self.frame, width=200)
-        self.right_frame.grid(row=0, column=2, sticky="nsew")
+        # self.right_frame = ttk.Frame(self.frame, width=200)
+        # self.right_frame.grid(row=0, column=2, sticky="nsew")
 
         self.scrollbar_h = ttk.Scrollbar(
             self.frame, orient="horizontal", command=self.image_canvas.xview)
@@ -131,7 +131,7 @@ class ImageViewer(tk.Frame):
         self.zoom_canvas.grid(row=0, column=0, sticky="nsew")
         self.update_zoom_window()
 
-        self.bottom_output_frame = tk.Frame(self.bottom_frame)
+        self.bottom_output_frame = ttk.Frame(self.bottom_frame)
         self.bottom_output_frame.grid(row=0, column=1, sticky="nsew")
         # create a label to display "Image Information" text
         label = ttk.Label(
@@ -240,8 +240,10 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Calculate the adjusted coordinates based on the scroll position
-        x_adjusted = self.mouse_x + self.image_canvas.xview()[0] * self.image.width
-        y_adjusted = self.mouse_y + self.image_canvas.yview()[0] * self.image.height
+        x_adjusted = self.mouse_x + \
+            self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + \
+            self.image_canvas.yview()[0] * self.image.height
 
         # Update the coordinate text
         self.coord_var.set("X-Axis={}, Y-Axis={}".format(
@@ -250,8 +252,10 @@ class ImageViewer(tk.Frame):
 
         # Update the RGB text
         if self.image:
-            x = int((x_adjusted - self.x_center) / self.zoom_factor + self.x_center)
-            y = int((y_adjusted - self.y_center) / self.zoom_factor + self.y_center)
+            x = int((x_adjusted - self.x_center) /
+                    self.zoom_factor + self.x_center)
+            y = int((y_adjusted - self.y_center) /
+                    self.zoom_factor + self.y_center)
             if 0 <= x < self.image.width and 0 <= y < self.image.height:
                 try:
                     pixel = self.image.getpixel((x, y))
@@ -262,7 +266,6 @@ class ImageViewer(tk.Frame):
                 except IndexError:
                     self.rgb_var.set("Error R={}, G={}, B={}".format(
                         round(0 / 255, 4), round(0 / 255, 4), round(0 / 255, 4)))
-
 
         # Update the zoom window if it exists
         if self.zoom_canvas:
@@ -453,7 +456,7 @@ class ImageViewer(tk.Frame):
 
         # Add a label with the program name and version
         label1 = ttk.Label(
-            about_window, text="Glut Image Coordinator v1.3", font=("Helvetica", 14))
+            about_window, text="Glut Image Coordinator v1.4", font=("Helvetica", 14))
         label1.pack(pady=10)
 
         # Add a label with the developer name and email
