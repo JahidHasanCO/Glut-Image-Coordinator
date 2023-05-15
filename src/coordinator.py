@@ -33,7 +33,7 @@ class ImageViewer(tk.Frame):
         if "forest-light" not in ttk.Style().theme_names():
             self.style = darkstyle(self.master)
         self.master.title("Glut Image Coordinator")
-
+        self.master.state('zoomed')
         # self.master.config(bg="skyblue")
         self.master.geometry("800x600")
 
@@ -160,6 +160,14 @@ class ImageViewer(tk.Frame):
         rgb_label = ttk.Label(
             self.bottom_output_frame, textvariable=self.rgb_var, font=("Helvetica", 12))
         rgb_label.grid(row=4, column=0, sticky="nsew")
+
+        # Configure the grid layout
+        self.master.columnconfigure(0, weight=1)
+        self.master.rowconfigure(0, weight=1)
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.rowconfigure(0, weight=1)
+
+        self.bottom_output_frame.columnconfigure(1, weight=1)
 
         
         self.upload_placeholder_image()
