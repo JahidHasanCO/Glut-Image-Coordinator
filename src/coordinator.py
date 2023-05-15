@@ -13,6 +13,11 @@ from ctypes import windll
 graph_max = 1
 graph_min = 0
 
+# Constants for tool selection
+TOOL_SELECTOR = "Selector"
+TOOL_PEN = "Pen"
+TOOL_HAND = "Hand"
+
 
 def darkstyle(root):
     style = ttk.Style(root)
@@ -56,6 +61,11 @@ class ImageViewer(tk.Frame):
         self.zoom_canvas = None
         self.height = 0.0
         self.width = 0.0
+        self.tool = TOOL_SELECTOR
+        # Initialize pen drawing variables
+        self.drawing = False
+        self.prev_x = None
+        self.prev_y = None
 
         # Adding File Menu and commands
         file = Menu(menubar, tearoff=0)
@@ -96,6 +106,21 @@ class ImageViewer(tk.Frame):
         self.frame = ttk.Frame(self.master)
         self.frame.grid(row=0, column=0, sticky="nsew")
 
+    # Create the left frame
+        self.left_frame = tk.Frame(self.frame, width=100, bg="lightgray")
+        self.left_frame.grid(row=0, column=2, sticky="ns")
+
+        # Create tool buttons
+        self.selector_button = tk.Button(
+            self.left_frame, text="Selector", command=lambda: self.set_tool(TOOL_SELECTOR))
+        self.selector_button.grid(row=0, column=0, sticky="ew")
+        self.pen_button = tk.Button(
+            self.left_frame, text="Pen", command=lambda: self.set_tool(TOOL_PEN))
+        self.pen_button.grid(row=1, column=0, sticky="ew")
+        self.hand_button = tk.Button(
+            self.left_frame, text="Hand", command=lambda: self.set_tool(TOOL_HAND))
+        self.hand_button.grid(row=2, column=0, sticky="ew")
+
         # Create an image canvas to display the uploaded image
         self.image_canvas = tk.Canvas(
             self.frame, borderwidth=1, relief="solid")
@@ -105,6 +130,8 @@ class ImageViewer(tk.Frame):
         # Bind the mouse events to the canvas
         self.image_canvas.bind("<Motion>", self.on_mouse_move)
         self.image_canvas.bind("<ButtonPress-1>", self.on_mouse_press)
+        self.image_canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
 
         # Create a canvas with the specified size
         self.canvas_width = tk.IntVar()
@@ -291,6 +318,40 @@ class ImageViewer(tk.Frame):
 
         self.image_canvas.config(width=500, height=500)
 
+    def set_tool(self, tool):
+        self.tool = tool
+        if self.tool == TOOL_SELECTOR:
+            self.image_canvas.config(cursor="arrow")
+            self.selector_button.config(relief="sunken")
+            self.pen_button.config(relief="raised")
+            self.hand_button.config(relief="raised")
+        elif self.tool == TOOL_PEN:
+            self.image_canvas.config(cursor="pencil")
+            self.selector_button.config(relief="raised")
+            self.pen_button.config(relief="sunken")
+            self.hand_button.config(relief="raised")
+        elif self.tool == TOOL_HAND:
+            self.image_canvas.config(cursor="hand2")
+            self.selector_button.config(relief="raised")
+            self.pen_button.config(relief="raised")
+            self.hand_button.config(relief="sunken")
+
+    def on_canvas_drag(self, event):
+        if self.tool == TOOL_HAND:
+            self.image_canvas.scan_dragto(event.x, event.y, gain=1)
+        elif self.tool == TOOL_PEN and self.drawing:
+            if self.prev_x is not None and self.prev_y is not None:
+                self.image_canvas.create_line(
+                    self.prev_x, self.prev_y, event.x, event.y, fill="black", width=2)
+            self.prev_x = event.x
+            self.prev_y = event.y
+
+    def on_mouse_release(self, event):
+        if self.tool == TOOL_PEN:
+            self.drawing = False
+            self.prev_x = None
+            self.prev_y = None
+
     def on_mouse_move(self, event):
         # Update the mouse coordinates
         self.mouse_x = event.x
@@ -329,37 +390,45 @@ class ImageViewer(tk.Frame):
             self.update_zoom_window()
 
     def on_mouse_press(self, event):
-        if self.image:
-            # Copy the coordinates and RGB values to the clipboard
-            x_adjusted = self.mouse_x + \
-                self.image_canvas.xview()[0] * self.image.width
-            y_adjusted = self.mouse_y + \
-                self.image_canvas.yview()[0] * self.image.height
+        if self.tool == TOOL_SELECTOR:
+            if self.image:
+                # Copy the coordinates and RGB values to the clipboard
+                x_adjusted = self.mouse_x + \
+                    self.image_canvas.xview()[0] * self.image.width
+                y_adjusted = self.mouse_y + \
+                    self.image_canvas.yview()[0] * self.image.height
 
-            x = int((x_adjusted - self.x_center) /
-                    self.zoom_factor + self.x_center)
-            y = int((y_adjusted - self.y_center) /
-                    self.zoom_factor + self.y_center)
+                x = int((x_adjusted - self.x_center) /
+                        self.zoom_factor + self.x_center)
+                y = int((y_adjusted - self.y_center) /
+                        self.zoom_factor + self.y_center)
 
-            if self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max:
-                try:
-                    pixel = self.image.getpixel((x, y))
-                    if len(pixel) >= 3:
-                        r, g, b = pixel[:3]
-                    else:
-                        r, g, b, *_ = pixel
-                except IndexError:
-                    r = 0
-                    g = 0
-                    b = 0
+                if self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max:
+                    try:
+                        pixel = self.image.getpixel((x, y))
+                        if len(pixel) >= 3:
+                            r, g, b = pixel[:3]
+                        else:
+                            r, g, b, *_ = pixel
+                    except IndexError:
+                        r = 0
+                        g = 0
+                        b = 0
 
-                coords = "glVertex3f({}, {}, 0.0f);".format(normalizeValue(
-                    x / self.width), normalizeValue((self.height - y) / self.height))
-                rgb = "glColor3f({}, {}, {});".format(
-                    round(r / 255, 3), round(g / 255, 3), round(b / 255, 3))
-                text = "{}\n{}".format(rgb, coords)
-                pyperclip.copy(text)
-                messagebox.showinfo("Code Copied", text)
+                    coords = "glVertex3f({}, {}, 0.0f);".format(normalizeValue(
+                        x / self.width), normalizeValue((self.height - y) / self.height))
+                    rgb = "glColor3f({}, {}, {});".format(
+                        round(r / 255, 3), round(g / 255, 3), round(b / 255, 3))
+                    text = "{}\n{}".format(rgb, coords)
+                    pyperclip.copy(text)
+                    messagebox.showinfo("Code Copied", text)
+        elif self.tool == TOOL_PEN:
+            self.drawing = True
+            self.prev_x = event.x
+            self.prev_y = event.y
+
+        elif self.tool == TOOL_HAND:
+            self.image_canvas.scan_mark(event.x, event.y)
 
     def update_zoom_window(self):
         # Create an image for the zoom window
