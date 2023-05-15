@@ -179,24 +179,24 @@ class ImageViewer(tk.Frame):
             # Load the image and add it to the canvas
             self.image = Image.open(file_path)
             self.image_tk = ImageTk.PhotoImage(self.image)
-            self.image_id = self.image_canvas.create_image(
-            0, 0, anchor="nw", image=self.image_tk)
-            self.image_canvas.config(width=self.image.width, height=self.image.height)
-            self.image_canvas.delete("all")
-            self.image_canvas.create_image(0, 0, anchor="nw", image=self.image)
-            self.image_canvas.config(scrollregion=self.image_canvas.bbox(tk.ALL))
-            # Add the horizontal scrollbar
-            self.scrollbar_h.config(command=self.image_canvas.xview)
-            self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
-            # Add the vertical scrollbar
-            self.scrollbar.config(command=self.image_canvas.yview)
-            self.image_canvas.config(yscrollcommand=self.scrollbar.set)
+            self.image_id = self.image_canvas.create_image(0, 0, anchor="nw", image=self.image_tk)
 
             # Update the height and width labels with the image size
             self.height = self.image.height
             self.width = self.image.width
             self.height_var.set("Height: {}".format(self.height))
             self.width_var.set("Width: {}".format(self.width))
+
+            # Configure the canvas scroll region and scrollbar commands
+            self.image_canvas.config(scrollregion=self.image_canvas.bbox(tk.ALL))
+            self.scrollbar_h.config(command=self.image_canvas.xview)
+            self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
+            self.scrollbar.config(command=self.image_canvas.yview)
+            self.image_canvas.config(yscrollcommand=self.scrollbar.set)
+
+            # Resize the canvas to match the image size
+            self.image_canvas.config(width=self.width, height=self.height)
+            self.image_canvas.itemconfig(self.image_id, image=self.image_tk)
             
 
     def upload_placeholder_image(self):
