@@ -33,8 +33,8 @@ class ImageViewer(tk.Frame):
         self.master.title("Glut Image Coordinator")
         self.master.state('zoomed')
         # self.master.config(bg="skyblue")
-        self.master.geometry("700x700")
-        self.master.minsize(700, 700)
+        self.master.geometry("700x720")
+        self.master.minsize(520, 720)
 
         # Load configuration file
         self.config = configparser.ConfigParser()
@@ -61,6 +61,7 @@ class ImageViewer(tk.Frame):
         file = Menu(menubar, tearoff=0)
         menubar.add_cascade(label='File', menu=file)
         file.add_command(label='New Window', command=self.create_new_window)
+        file.add_command(label='New Canvas', command=self.set_canvas_size)
         file.add_command(label='Open Image...', command=self.upload_image)
         file.add_command(label='Close Image',
                          command=self.upload_placeholder_image)
@@ -104,7 +105,12 @@ class ImageViewer(tk.Frame):
         # Bind the mouse events to the canvas
         self.image_canvas.bind("<Motion>", self.on_mouse_move)
         self.image_canvas.bind("<ButtonPress-1>", self.on_mouse_press)
-        self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
+
+        # Create a canvas with the specified size
+        self.canvas_width = tk.IntVar()
+        self.canvas_height = tk.IntVar()
+        self.canvas_width.set(800)
+        self.canvas_height.set(600)
 
         # Create a scrollbar for the canvas
         self.scrollbar = ttk.Scrollbar(
@@ -134,33 +140,33 @@ class ImageViewer(tk.Frame):
         # create a label to display "Image Information" text
         label = ttk.Label(
             self.bottom_output_frame, text="Image Information", font=("Helvetica", 14))
-        label.grid(row=0, column=0, sticky="nsew")
+        label.grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
 
         # Create a label to display the height of the image
         self.height_var = tk.StringVar()
         self.height_var.set("Image Height: 0")
         self.height_label = ttk.Label(
             self.bottom_output_frame, textvariable=self.height_var, font=("Helvetica", 12))
-        self.height_label.grid(row=1, column=0, sticky="nsew")
+        self.height_label.grid(row=1, column=0, padx=20, sticky="nsew")
 
         # Create a label to display the width of the image
         self.width_var = tk.StringVar()
         self.width_var.set("Image Width: 0")
         self.width_label = ttk.Label(
             self.bottom_output_frame, textvariable=self.width_var, font=("Helvetica", 12))
-        self.width_label.grid(row=2, column=0, sticky="nsew")
+        self.width_label.grid(row=2, column=0, padx=20, sticky="nsew")
 
         self.coord_var = tk.StringVar()
         self.coord_var.set("X-Axis=0, Y-Axis=0")
         coord_label = ttk.Label(
             self.bottom_output_frame, textvariable=self.coord_var, font=("Helvetica", 12))
-        coord_label.grid(row=3, column=0, sticky="nsew")
+        coord_label.grid(row=3, column=0, padx=20, sticky="nsew")
 
         self.rgb_var = tk.StringVar()
         self.rgb_var.set("R=0, G=0, B=0")
         rgb_label = ttk.Label(
             self.bottom_output_frame, textvariable=self.rgb_var, font=("Helvetica", 12))
-        rgb_label.grid(row=4, column=0, sticky="nsew")
+        rgb_label.grid(row=4, column=0, padx=20, sticky="nsew")
 
         # Configure the grid layout
         self.master.columnconfigure(0, weight=1)
@@ -170,6 +176,45 @@ class ImageViewer(tk.Frame):
         self.bottom_output_frame.columnconfigure(1, weight=1)
 
         self.upload_placeholder_image()
+
+    def set_canvas_size(self):
+        # Open a dialog to get the canvas size from the user
+        self.dialogNewCanvas = tk.Toplevel()
+        self.dialogNewCanvas.resizable(False, False)
+        filePath = resource_path("img/icon.ico")
+        self.dialogNewCanvas.iconbitmap(filePath)
+        self.dialogNewCanvas.title("New Canvas")
+        ttk.Label(self.dialogNewCanvas, text="   Width:").grid(
+            row=0, column=0, padx=5, pady=5)
+        ttk.Entry(self.dialogNewCanvas, textvariable=self.canvas_width).grid(
+            row=0, column=1, padx=5, pady=5)
+        ttk.Label(self.dialogNewCanvas, text="px   ").grid(
+            row=0, column=2, padx=5, pady=5)
+        ttk.Label(self.dialogNewCanvas, text="   Height:").grid(
+            row=1, column=0, padx=5, pady=5)
+        ttk.Entry(self.dialogNewCanvas, textvariable=self.canvas_height).grid(
+            row=1, column=1, padx=5, pady=5)
+        ttk.Label(self.dialogNewCanvas, text="px   ").grid(
+            row=1, column=2, padx=5, pady=5)
+        ttk.Button(self.dialogNewCanvas, text="OK", command=self.update_canvas_size).grid(
+            row=2, column=1, padx=5, pady=5)
+
+    def update_canvas_size(self):
+        # Update the canvas size and scrollbar
+        self.image_canvas.delete("all")
+        self.image = Image.new(
+            "RGB", (self.canvas_width.get(), self.canvas_height.get()), "white")
+        self.image_canvas.config(
+            width=self.canvas_width.get(), height=self.canvas_height.get())
+        self.image_canvas.config(scrollregion=self.image_canvas.bbox(tk.ALL))
+        self.x_max = self.canvas_width.get() - 1
+        self.y_max = self.canvas_height.get() - 1
+        self.height = self.canvas_height.get()
+        self.width = self.canvas_width.get()
+        self.height_var.set("Height: {}".format(self.height))
+        self.width_var.set("Width: {}".format(self.width))
+        # Close the dialog
+        self.dialogNewCanvas.destroy()
 
     def upload_image(self):
         # Open a file dialog to select an image file
@@ -200,7 +245,7 @@ class ImageViewer(tk.Frame):
             self.image_canvas.config(width=self.width, height=self.height)
             self.image_canvas.itemconfig(self.image_id, image=self.image_tk)
 
-            self.update_coordinates()
+            self.update_coordinate()
 
     def upload_placeholder_image(self):
         # Open a file dialog to select an image file
@@ -273,8 +318,6 @@ class ImageViewer(tk.Frame):
 
     def on_mouse_press(self, event):
         if self.image:
-            self.mouse_pressed = True
-
             # Copy the coordinates and RGB values to the clipboard
             x_adjusted = self.mouse_x + \
                 self.image_canvas.xview()[0] * self.image.width
@@ -305,10 +348,6 @@ class ImageViewer(tk.Frame):
                 text = "{}\n{}".format(rgb, coords)
                 pyperclip.copy(text)
                 messagebox.showinfo("Code Copied", text)
-
-    def on_mouse_release(self, event):
-        # Stop dragging the zoom rectangle
-        self.mouse_pressed = False
 
     def update_zoom_window(self):
         # Create an image for the zoom window
@@ -486,8 +525,8 @@ class ImageViewer(tk.Frame):
     def on_contact_us_click(self):
         # Create a new Toplevel window for the Contact Us dialog
         top = Toplevel(self.master)
-        top.minsize(300, 160)
-        top.maxsize(300, 160)
+        top.minsize(400, 160)
+        top.maxsize(400, 160)
         top.title("Contact Us")
         filePath = resource_path("img/icon.ico")
         top.iconbitmap(filePath)
