@@ -8,7 +8,7 @@ import tkinter.ttk as ttk
 import configparser
 from util.get_resource import *
 from util.normalization import normalizeValue
-
+from ctypes import windll
 
 graph_max = 1
 graph_min = 0
@@ -213,6 +213,14 @@ class ImageViewer(tk.Frame):
         self.width = self.canvas_width.get()
         self.height_var.set("Height: {}".format(self.height))
         self.width_var.set("Width: {}".format(self.width))
+
+        # Draw center horizontal line
+        self.image_canvas.create_line(
+            0, self.height/2, self.width, self.height/2, fill="black")
+
+        # Draw center vertical line
+        self.image_canvas.create_line(
+            self.width/2, 0, self.width/2, self.height, fill="black")
         # Close the dialog
         self.dialogNewCanvas.destroy()
 
@@ -224,6 +232,7 @@ class ImageViewer(tk.Frame):
             # Load the image and add it to the canvas
             self.image = Image.open(file_path)
             self.image_tk = ImageTk.PhotoImage(self.image)
+            self.image_canvas.delete("all")
             self.image_id = self.image_canvas.create_image(
                 0, 0, anchor="nw", image=self.image_tk)
 
@@ -234,6 +243,7 @@ class ImageViewer(tk.Frame):
             self.width_var.set("Width: {}".format(self.width))
 
             # Configure the canvas scroll region and scrollbar commands
+
             self.image_canvas.config(
                 scrollregion=self.image_canvas.bbox(tk.ALL))
             self.scrollbar_h.config(command=self.image_canvas.xview)
@@ -268,6 +278,7 @@ class ImageViewer(tk.Frame):
         self.image = self.image.resize((500, 500), Image.LANCZOS)
 
         self.image_tk = ImageTk.PhotoImage(self.image)
+        self.image_canvas.delete("all")
         self.image_id = self.image_canvas.create_image(
             0, 0, anchor="nw", image=self.image_tk)
 
@@ -277,6 +288,7 @@ class ImageViewer(tk.Frame):
         self.height_var.set("Height: {}".format(self.image.height))
         self.width_var.set("Width: {}".format(self.image.width))
         # Resize the canvas to match the fixed size
+
         self.image_canvas.config(width=500, height=500)
 
     def on_mouse_move(self, event):
