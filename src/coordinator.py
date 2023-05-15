@@ -20,7 +20,6 @@ TOOL_HAND = "Hand"
 TOOL_COLOR_SELECTOR = "color_selector"
 
 
-
 def darkstyle(root):
     style = ttk.Style(root)
     filePath = resource_path("theme/forest-light.tcl")
@@ -69,7 +68,7 @@ class ImageViewer(tk.Frame):
         self.prev_x = None
         self.prev_y = None
         self.selected_color = "black"  # Initial color
-        self.background_color = "white"  
+        self.background_color = "white"
 
         # Adding File Menu and commands
         file = Menu(menubar, tearoff=0)
@@ -124,8 +123,6 @@ class ImageViewer(tk.Frame):
         self.hand_button = tk.Button(
             self.left_frame, text="Hand", command=lambda: self.set_tool(TOOL_HAND))
         self.hand_button.grid(row=2, column=0, sticky="ew")
-        
-
 
         # Create an image canvas to display the uploaded image
         self.image_canvas = tk.Canvas(
@@ -352,7 +349,6 @@ class ImageViewer(tk.Frame):
             self.prev_x = event.x
             self.prev_y = event.y
 
-
     def on_mouse_release(self, event):
         if self.tool == TOOL_PEN:
             self.drawing = False
@@ -439,11 +435,10 @@ class ImageViewer(tk.Frame):
         elif self.tool == TOOL_COLOR_SELECTOR:
             self.selected_color = self.get_pixel_color(event.x, event.y)
 
-    
     def get_pixel_color(self, x, y):
-        pixel = self.image_canvas.gettags(self.image_canvas.find_closest(x, y))[0]
+        pixel = self.image_canvas.gettags(
+            self.image_canvas.find_closest(x, y))[0]
         return self.image_canvas.itemcget(pixel, "fill")
-
 
     def update_zoom_window(self):
         # Create an image for the zoom window
