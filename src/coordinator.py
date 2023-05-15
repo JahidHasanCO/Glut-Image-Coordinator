@@ -17,6 +17,8 @@ graph_min = 0
 TOOL_SELECTOR = "Selector"
 TOOL_PEN = "Pen"
 TOOL_HAND = "Hand"
+TOOL_COLOR_SELECTOR = "color_selector"
+TOOL_ERASE = "erase"
 
 
 def darkstyle(root):
@@ -66,6 +68,8 @@ class ImageViewer(tk.Frame):
         self.drawing = False
         self.prev_x = None
         self.prev_y = None
+        self.selected_color = "black"  # Initial color
+        self.background_color = "white"  
 
         # Adding File Menu and commands
         file = Menu(menubar, tearoff=0)
@@ -120,6 +124,10 @@ class ImageViewer(tk.Frame):
         self.hand_button = tk.Button(
             self.left_frame, text="Hand", command=lambda: self.set_tool(TOOL_HAND))
         self.hand_button.grid(row=2, column=0, sticky="ew")
+        self.erase_button = tk.Button(
+            self.left_frame, text="Erase", command=lambda: self.set_tool(TOOL_ERASE))
+        self.erase_button.grid(row=3, column=0, sticky="ew")
+
 
         # Create an image canvas to display the uploaded image
         self.image_canvas = tk.Canvas(
@@ -342,12 +350,14 @@ class ImageViewer(tk.Frame):
         elif self.tool == TOOL_PEN and self.drawing:
             if self.prev_x is not None and self.prev_y is not None:
                 self.image_canvas.create_line(
-                    self.prev_x, self.prev_y, event.x, event.y, fill="black", width=2)
+                    self.prev_x, self.prev_y, event.x, event.y, fill=self.selected_color, width=2)
             self.prev_x = event.x
             self.prev_y = event.y
+        elif self.tool == TOOL_ERASE and self.drawing:
+            self.erase_pixel(event.x, event.y)
 
     def on_mouse_release(self, event):
-        if self.tool == TOOL_PEN:
+        if self.tool == TOOL_PEN or self.tool == TOOL_ERASE:
             self.drawing = False
             self.prev_x = None
             self.prev_y = None
@@ -429,6 +439,30 @@ class ImageViewer(tk.Frame):
 
         elif self.tool == TOOL_HAND:
             self.image_canvas.scan_mark(event.x, event.y)
+        elif self.tool == TOOL_COLOR_SELECTOR:
+            self.selected_color = self.get_pixel_color(event.x, event.y)
+        elif self.tool == TOOL_ERASE:
+            self.drawing = True
+            self.prev_x = event.x
+            self.prev_y = event.y
+            self.erase_pixel(event.x, event.y)
+    
+    def get_pixel_color(self, x, y):
+        pixel = self.image_canvas.gettags(self.image_canvas.find_closest(x, y))[0]
+        return self.image_canvas.itemcget(pixel, "fill")
+
+    def erase_pixel(self, x, y):
+        items = self.image_canvas.find_overlapping(x, y, x, y)
+        for item in items:
+            tags = self.image_canvas.gettags(item)
+            if "pixel" in tags:
+                coords = self.image_canvas.coords(item)
+                x1, y1, x2, y2 = coords
+                self.image_canvas.create_rectangle(x1, y1, x2, y2, fill=self.background_color, outline="")
+                self.image_canvas.delete(item)
+
+
+
 
     def update_zoom_window(self):
         # Create an image for the zoom window
