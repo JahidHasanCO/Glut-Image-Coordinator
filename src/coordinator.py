@@ -124,26 +124,29 @@ class ImageViewer(tk.Frame):
         self.left_frame.grid(row=0, column=2, sticky="ns")
 
         # Create tool buttons
+        ttk.Label(self.left_frame, text="Tools").grid(
+            row=0, column=0, padx=5, pady=5)
+        ttk.Separator(self.left_frame).grid(row=1,column=0,sticky="nsew")
         self.selector_button = tk.Button(
             self.left_frame, text="", image=self.selector_icon, command=lambda: self.set_tool(TOOL_SELECTOR))
-        self.selector_button.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+        self.selector_button.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
         self.pen_button = tk.Button(
             self.left_frame, text="", image=self.pen_icon,  command=lambda: self.set_tool(TOOL_PEN))
-        self.pen_button.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+        self.pen_button.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
         self.hand_button = tk.Button(
             self.left_frame, text="", image=self.hand_icon,  command=lambda: self.set_tool(TOOL_HAND))
-        self.hand_button.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
+        self.hand_button.grid(row=4, column=0, sticky="ew", padx=5, pady=5)
 
         self.color_selector = tk.Button(
             self.left_frame, text="", image=self.color_selector_icon, command=lambda: self.set_tool(TOOL_COLOR_SELECTOR))
-        self.color_selector.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
+        self.color_selector.grid(row=5, column=0, sticky="ew", padx=5, pady=5)
 
         # Inside the create_toolbar method
         button_width = self.selector_icon.width() + 10  # Add padding
         button_height = self.selector_icon.height() + 10  # Add padding
 
         self.selector_button.config(
-            width=button_width, height=button_height, relief="flat", bd=0, text="")
+            width=button_width, height=button_height, relief="flat", bd=0, text="",background="lightgrey")
         self.pen_button.config(
             width=button_width, height=button_height, relief="flat", bd=0, text="")
         self.hand_button.config(
@@ -202,41 +205,41 @@ class ImageViewer(tk.Frame):
         self.bottom_frame.grid(row=1, column=0, sticky="nsew")
 
         self.zoom_canvas = tk.Canvas(
-            self.bottom_frame, width=200, height=200, borderwidth=1, relief="solid")
-        self.zoom_canvas.grid(row=0, column=0, sticky="nsew")
+            self.bottom_frame, width=100, height=100, borderwidth=1, relief="solid")
+        self.zoom_canvas.grid(row=0, column=0)
         self.update_zoom_window()
 
         self.bottom_output_frame = tk.Frame(self.bottom_frame)
         self.bottom_output_frame.grid(row=0, column=1, sticky="nsew")
         # create a label to display "Image Information" text
         label = ttk.Label(
-            self.bottom_output_frame, text="Canvas Information", font=("Helvetica", 14))
-        label.grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
+            self.bottom_output_frame, text="Canvas Information", font=("Helvetica", 12))
+        label.grid(row=0, column=0, padx=20, sticky="nsew")
 
         # Create a label to display the height of the image
         self.height_var = tk.StringVar()
         self.height_var.set("Image Height: 0")
         self.height_label = ttk.Label(
-            self.bottom_output_frame, textvariable=self.height_var, font=("Helvetica", 12))
+            self.bottom_output_frame, textvariable=self.height_var, font=("Helvetica", 10))
         self.height_label.grid(row=1, column=0, padx=20, sticky="nsew")
 
         # Create a label to display the width of the image
         self.width_var = tk.StringVar()
         self.width_var.set("Image Width: 0")
         self.width_label = ttk.Label(
-            self.bottom_output_frame, textvariable=self.width_var, font=("Helvetica", 12))
+            self.bottom_output_frame, textvariable=self.width_var, font=("Helvetica", 10))
         self.width_label.grid(row=2, column=0, padx=20, sticky="nsew")
 
         self.coord_var = tk.StringVar()
         self.coord_var.set("X-Axis=0, Y-Axis=0")
         coord_label = ttk.Label(
-            self.bottom_output_frame, textvariable=self.coord_var, font=("Helvetica", 12))
+            self.bottom_output_frame, textvariable=self.coord_var, font=("Helvetica", 10))
         coord_label.grid(row=3, column=0, padx=20, sticky="nsew")
 
         self.rgb_var = tk.StringVar()
         self.rgb_var.set("R=0, G=0, B=0")
         rgb_label = ttk.Label(
-            self.bottom_output_frame, textvariable=self.rgb_var, font=("Helvetica", 12))
+            self.bottom_output_frame, textvariable=self.rgb_var, font=("Helvetica", 10))
         rgb_label.grid(row=4, column=0, padx=20, sticky="nsew")
 
         # Configure the grid layout
@@ -399,19 +402,19 @@ class ImageViewer(tk.Frame):
         self.tool = tool
         if self.tool == TOOL_SELECTOR:
             self.image_canvas.config(cursor="circle")
-            self.selector_button.config(relief="sunken")
-            self.pen_button.config(relief="raised")
-            self.hand_button.config(relief="raised")
+            self.selector_button.config(relief="sunken",background="lightgrey")
+            self.pen_button.config(relief="raised",background="white")
+            self.hand_button.config(relief="raised",background="white")
         elif self.tool == TOOL_PEN:
             self.image_canvas.config(cursor="pencil")
-            self.selector_button.config(relief="raised")
-            self.pen_button.config(relief="sunken")
-            self.hand_button.config(relief="raised")
+            self.selector_button.config(relief="raised",background="white")
+            self.pen_button.config(relief="sunken",background="lightgrey")
+            self.hand_button.config(relief="raised",background="white")
         elif self.tool == TOOL_HAND:
             self.image_canvas.config(cursor="hand2")
-            self.selector_button.config(relief="raised")
-            self.pen_button.config(relief="raised")
-            self.hand_button.config(relief="sunken")
+            self.selector_button.config(relief="raised",background="white")
+            self.pen_button.config(relief="raised",background="white")
+            self.hand_button.config(relief="sunken",background="lightgrey")
         elif self.tool == TOOL_COLOR_SELECTOR:
             self.open_color_picker()
 
@@ -530,16 +533,16 @@ class ImageViewer(tk.Frame):
         # Create an image for the zoom window
         self.x_center = self.mouse_x / self.zoom_factor
         self.y_center = self.mouse_y / self.zoom_factor
-        self.zoom_image = Image.new("RGB", (200, 200), "white")
+        self.zoom_image = Image.new("RGB", (100, 100), "white")
         self.zoom_image_tk = ImageTk.PhotoImage(self.zoom_image)
         self.zoom_canvas.create_image(
-            0, 0, anchor="nw", image=self.zoom_image_tk)
+            0, 0, anchor="center", image=self.zoom_image_tk)
 
         # Create a rectangle to show the zoom area on the canvas
-        x1 = self.mouse_x - 50
-        y1 = self.mouse_y - 50
-        x2 = self.mouse_x + 50
-        y2 = self.mouse_y + 50
+        x1 = self.mouse_x - 25
+        y1 = self.mouse_y - 25
+        x2 = self.mouse_x + 25
+        y2 = self.mouse_y + 25
         self.zoom_rect_id = self.image_canvas.create_rectangle(
             x1, y1, x2, y2, outline="red")
 
@@ -549,10 +552,10 @@ class ImageViewer(tk.Frame):
 
         if self.image and self.zoom_canvas:
             # Update the zoom rectangle position and size
-            x1 = self.mouse_x - 50
-            y1 = self.mouse_y - 50
-            x2 = self.mouse_x + 50
-            y2 = self.mouse_y + 50
+            x1 = self.mouse_x - 25
+            y1 = self.mouse_y - 25
+            x2 = self.mouse_x + 25
+            y2 = self.mouse_y + 25
             self.image_canvas.coords(self.zoom_rect_id, x1, y1, x2, y2)
 
             # Update the zoom center position
@@ -560,23 +563,23 @@ class ImageViewer(tk.Frame):
             self.zoom_center_y = self.mouse_y / self.zoom_factor
 
             # Schedule the zoom image update after a delay
-            self.after(50, self.update_zoom_image)
+            self.after(25, self.update_zoom_image)
 
             # Redraw the zoom rectangle
-            x1 = self.mouse_x - 50
-            y1 = self.mouse_y - 50
-            x2 = self.mouse_x + 50
-            y2 = self.mouse_y + 50
+            x1 = self.mouse_x - 25
+            y1 = self.mouse_y - 25
+            x2 = self.mouse_x + 25
+            y2 = self.mouse_y + 25
             self.image_canvas.coords(self.zoom_rect_id, x1, y1, x2, y2)
 
     def update_zoom_image(self):
         # Update the zoom window image
-        x = int(self.zoom_center_x - 100 / self.zoom_factor)
-        y = int(self.zoom_center_y - 100 / self.zoom_factor)
+        x = int(self.zoom_center_x - 50 / self.zoom_factor)
+        y = int(self.zoom_center_y - 50 / self.zoom_factor)
         x1 = max(x, 0)
         y1 = max(y, 0)
-        x2 = min(x + 200 // self.zoom_factor, self.image.width)
-        y2 = min(y + 200 // self.zoom_factor, self.image.height)
+        x2 = min(x + 100 // self.zoom_factor, self.image.width) 
+        y2 = min(y + 100 // self.zoom_factor, self.image.height)
 
         # add padding if the zoomed image is not complete
         if x2 == self.image.width and x1 > 0:
@@ -585,23 +588,23 @@ class ImageViewer(tk.Frame):
             y1 = max(y1 - (y2 - self.image.height) - 1, 0)
 
         self.zoom_image = self.image.crop((x1, y1, x2, y2))
-        self.zoom_image = self.zoom_image.resize((200, 200), Image.BILINEAR)
+        self.zoom_image = self.zoom_image.resize((100, 100), Image.BILINEAR)
 
         left_pad = 0
         right_pad = 0
         top_pad = 0
         bottom_pad = 0
         # add one pixel padding if the zoomed image is not complete
-        if x2 - x1 < 200 or y2 - y1 < 200:
-            if self.mouse_x <= 250:
-                left_pad = abs(200 - (x2-x1))
+        if x2 - x1 < 100 or y2 - y1 < 100:
+            if self.mouse_x <= 150:
+                left_pad = abs(100 - (x2-x1))
             else:
-                right_pad = abs(200 - (x2-x1))
+                right_pad = abs(100 - (x2-x1))
 
-            if self.mouse_y <= 250:
-                top_pad = abs(200 - (y2-y1))
+            if self.mouse_y <= 150:
+                top_pad = abs(100 - (y2-y1))
             else:
-                bottom_pad = abs(200 - (y2-y1))
+                bottom_pad = abs(100 - (y2-y1))
 
             self.zoom_image = ImageOps.expand(
                 self.zoom_image, border=(left_pad - right_pad, top_pad-bottom_pad, right_pad, bottom_pad), fill='white')
@@ -612,15 +615,15 @@ class ImageViewer(tk.Frame):
 
         # Draw a crosshair in the center of the zoom window
         x1 = 0
-        y1 = 100
-        x2 = 200
-        y2 = 100
+        y1 = 50
+        x2 = 100
+        y2 = 50
         self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
 
-        x1 = 100
+        x1 = 50
         y1 = 0
-        x2 = 100
-        y2 = 200
+        x2 = 50
+        y2 = 100
         self.zoom_canvas.create_line(x1, y1, x2, y2, fill="red")
 
     def set_coordinates(self, x_min, x_max, y_min, y_max, x_center, y_center):
