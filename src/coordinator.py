@@ -39,8 +39,8 @@ class ImageViewer(tk.Frame):
         self.master.title("Glut Image Coordinator")
         self.master.state('zoomed')
         # self.master.config(bg="skyblue")
-        self.master.geometry("700x720")
-        self.master.minsize(520, 720)
+        self.master.geometry("500x600")
+        self.master.minsize(500, 600)
 
         # Load configuration file
         self.config = configparser.ConfigParser()
@@ -120,7 +120,7 @@ class ImageViewer(tk.Frame):
         self.frame.grid(row=0, column=0, sticky="nsew")
 
     # Create the left frame
-        self.left_frame = tk.Frame(self.frame, width=100, background="#fff")
+        self.left_frame = tk.Frame(self.frame, background="#fff")
         self.left_frame.grid(row=0, column=2, sticky="ns")
 
         # Create tool buttons
@@ -163,9 +163,6 @@ class ImageViewer(tk.Frame):
         self.image_canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.image_canvas.bind("<Control-Motion>", self.on_canvas_drag)
         self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
-        self.image_canvas.bind("<MouseWheel>", self.on_mousewheel)
-        self.image_canvas.bind("<ButtonRelease-2>", self.on_mousewheel_release)
-        self.image_canvas.bind("<B2-Motion>", self.on_touchpad_scroll)
 
         # Create a canvas with the specified size
         self.canvas_width = tk.IntVar()
@@ -186,6 +183,14 @@ class ImageViewer(tk.Frame):
             self.frame, orient="horizontal", command=self.image_canvas.xview)
         self.scrollbar_h.grid(row=1, column=0, sticky="ew")
         self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
+
+        # self.zoom_in_button = tk.Button(
+        #     self.left_frame, text="", image=self.color_selector_icon, command=self.zoom(1.5))
+        # self.zoom_in_button.grid(row=4, column=0, sticky="ew", padx=5, pady=5)
+
+        # self.zoom_out_button = tk.Button(
+        #     self.left_frame, text="", image=self.color_selector_icon, command=self.zoom(0.9))
+        # self.zoom_out_button.grid(row=5, column=0, sticky="ew", padx=5, pady=5)
 
         tempFrame = tk.Frame(self.frame, background="#fff")
         tempFrame.grid(row=1, column=1, sticky="nsew")
@@ -311,23 +316,10 @@ class ImageViewer(tk.Frame):
         self.tool = TOOL_SELECTOR
         self.set_tool(TOOL_SELECTOR)
 
-    def on_touchpad_scroll(self, event):
-        if event.num == 2:
-            if event.delta > 0:
-                self.zoom_in()
-            else:
-                self.zoom_out()
-
-    def zoom_in(self):
-        self.zoom(1.1)
-
-    def zoom_out(self):
-        self.zoom(0.9)
-
     def zoom(self, factor):
-        self.zoom_factor *= factor
+        self.canvas_zoom_factor *= factor
         self.image_canvas.scale(
-            "all", 0, 0, self.zoom_factor, self.zoom_factor)
+            "all", 0, 0, self.canvas_zoom_factor, self.canvas_zoom_factor)
 
     def upload_image(self):
         # Open a file dialog to select an image file
@@ -433,7 +425,7 @@ class ImageViewer(tk.Frame):
             self.image_canvas.xview()[0] * self.image.width
         y_adjusted = self.mouse_y + \
             self.image_canvas.yview()[0] * self.image.height
-        
+
         if self.tool == TOOL_HAND:
             self.image_canvas.scan_dragto(event.x, event.y, gain=1)
         elif self.tool == TOOL_PEN and self.drawing:
