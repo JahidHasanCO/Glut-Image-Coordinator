@@ -13,7 +13,7 @@ from tkinter import colorchooser
 graph_max = 1
 graph_min = 0
 
-# Constants for tool selection 
+# Constants for tool selection
 TOOL_SELECTOR = "Selector"
 TOOL_PEN = "Pen"
 TOOL_HAND = "Hand"
@@ -63,11 +63,13 @@ class ImageViewer(tk.Frame):
         self.height = 0.0
         self.width = 0.0
         self.tool = TOOL_SELECTOR
+        self.canvas_zoom_factor = 1.0
         # Inside the create_toolbar method
         self.selector_icon = tk.PhotoImage(file=resource_path("img/mouse.png"))
         self.pen_icon = tk.PhotoImage(file=resource_path("img/pen.png"))
         self.hand_icon = tk.PhotoImage(file=resource_path("img/hand.png"))
-        self.color_selector_icon = tk.PhotoImage(file=resource_path("img/colorPicker.png"))
+        self.color_selector_icon = tk.PhotoImage(
+            file=resource_path("img/colorPicker.png"))
 
         # Initialize pen drawing variables
         self.drawing = False
@@ -113,11 +115,12 @@ class ImageViewer(tk.Frame):
     def create_widgets(self):
 
         # Create a frame to hold the canvas and scrollbar
-        self.frame = tk.Frame(self.master, bg="lightgray")
+        self.frame = tk.Frame(self.master, bg="lightgray",
+                              background="#E1E1E1")
         self.frame.grid(row=0, column=0, sticky="nsew")
 
     # Create the left frame
-        self.left_frame = tk.Frame(self.frame, width=100, bg="lightgray")
+        self.left_frame = tk.Frame(self.frame, width=100, background="#fff")
         self.left_frame.grid(row=0, column=2, sticky="ns")
 
         # Create tool buttons
@@ -125,25 +128,28 @@ class ImageViewer(tk.Frame):
             self.left_frame, text="", image=self.selector_icon, command=lambda: self.set_tool(TOOL_SELECTOR))
         self.selector_button.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
         self.pen_button = tk.Button(
-            self.left_frame, text="",image=self.pen_icon,  command=lambda: self.set_tool(TOOL_PEN))
+            self.left_frame, text="", image=self.pen_icon,  command=lambda: self.set_tool(TOOL_PEN))
         self.pen_button.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
         self.hand_button = tk.Button(
-            self.left_frame, text="",image=self.hand_icon,  command=lambda: self.set_tool(TOOL_HAND))
+            self.left_frame, text="", image=self.hand_icon,  command=lambda: self.set_tool(TOOL_HAND))
         self.hand_button.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
 
         self.color_selector = tk.Button(
-            self.left_frame, text="", image=self.color_selector_icon,command=lambda: self.set_tool(TOOL_COLOR_SELECTOR))
+            self.left_frame, text="", image=self.color_selector_icon, command=lambda: self.set_tool(TOOL_COLOR_SELECTOR))
         self.color_selector.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
 
         # Inside the create_toolbar method
         button_width = self.selector_icon.width() + 10  # Add padding
         button_height = self.selector_icon.height() + 10  # Add padding
 
-        self.selector_button.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
-        self.pen_button.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
-        self.hand_button.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
-        self.color_selector.config(width=button_width, height=button_height, relief="flat", bd=0, text="")
-
+        self.selector_button.config(
+            width=button_width, height=button_height, relief="flat", bd=0, text="")
+        self.pen_button.config(
+            width=button_width, height=button_height, relief="flat", bd=0, text="")
+        self.hand_button.config(
+            width=button_width, height=button_height, relief="flat", bd=0, text="")
+        self.color_selector.config(
+            width=button_width, height=button_height, relief="flat", bd=0, text="")
 
         # Create an image canvas to display the uploaded image
         self.image_canvas = tk.Canvas(
@@ -155,14 +161,17 @@ class ImageViewer(tk.Frame):
         self.image_canvas.bind("<Motion>", self.on_mouse_move)
         self.image_canvas.bind("<ButtonPress-1>", self.on_mouse_press)
         self.image_canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release) 
-
+        self.image_canvas.bind("<Control-Motion>", self.on_canvas_drag)
+        self.image_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
+        self.image_canvas.bind("<MouseWheel>", self.on_mousewheel)
+        self.image_canvas.bind("<ButtonRelease-2>", self.on_mousewheel_release)
+        self.image_canvas.bind("<B2-Motion>", self.on_touchpad_scroll)
 
         # Create a canvas with the specified size
         self.canvas_width = tk.IntVar()
         self.canvas_height = tk.IntVar()
-        self.canvas_width.set(800)
-        self.canvas_height.set(600)
+        self.canvas_width.set(500)
+        self.canvas_height.set(500)
 
         # Create a scrollbar for the canvas
         self.scrollbar = ttk.Scrollbar(
@@ -178,8 +187,13 @@ class ImageViewer(tk.Frame):
         self.scrollbar_h.grid(row=1, column=0, sticky="ew")
         self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
 
+        tempFrame = tk.Frame(self.frame, background="#fff")
+        tempFrame.grid(row=1, column=1, sticky="nsew")
+        tempFrame1 = tk.Frame(self.frame, background="#fff")
+        tempFrame1.grid(row=1, column=2, sticky="nsew")
+
         # Create a frame to hold the buttons
-        self.bottom_frame = ttk.Frame(self.master)
+        self.bottom_frame = tk.Frame(self.master)
         self.bottom_frame.grid(row=1, column=0, sticky="nsew")
 
         self.zoom_canvas = tk.Canvas(
@@ -187,11 +201,11 @@ class ImageViewer(tk.Frame):
         self.zoom_canvas.grid(row=0, column=0, sticky="nsew")
         self.update_zoom_window()
 
-        self.bottom_output_frame = ttk.Frame(self.bottom_frame)
+        self.bottom_output_frame = tk.Frame(self.bottom_frame)
         self.bottom_output_frame.grid(row=0, column=1, sticky="nsew")
         # create a label to display "Image Information" text
         label = ttk.Label(
-            self.bottom_output_frame, text="Image Information", font=("Helvetica", 14))
+            self.bottom_output_frame, text="Canvas Information", font=("Helvetica", 14))
         label.grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
 
         # Create a label to display the height of the image
@@ -268,23 +282,52 @@ class ImageViewer(tk.Frame):
 
         # Draw center horizontal line
         self.image_canvas.create_line(
-            0, self.height/2, self.width, self.height/2, fill="black")
+            0, self.height/2, self.width, self.height/2, fill="grey")
 
         # Draw center vertical line
         self.image_canvas.create_line(
-            self.width/2, 0, self.width/2, self.height, fill="black")
-        
+            self.width/2, 0, self.width/2, self.height, fill="grey")
+
         # Configure the canvas scroll region and scrollbar commands
 
         self.image_canvas.config(
-                scrollregion=self.image_canvas.bbox(tk.ALL))
+            scrollregion=self.image_canvas.bbox(tk.ALL))
         self.scrollbar_h.config(command=self.image_canvas.xview)
         self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
         self.scrollbar.config(command=self.image_canvas.yview)
         self.image_canvas.config(yscrollcommand=self.scrollbar.set)
-        
         # Close the dialog
         self.dialogNewCanvas.destroy()
+
+    def on_mousewheel(self, event):
+        if event.state == 0x008:  # Check if Alt key is pressed
+            self.image_canvas.configure(cursor="magnifying_glass")
+            if event.delta > 0:
+                self.zoom_in()
+            else:
+                self.zoom_out()
+
+    def on_mousewheel_release(self, event):
+        self.tool = TOOL_SELECTOR
+        self.set_tool(TOOL_SELECTOR)
+
+    def on_touchpad_scroll(self, event):
+        if event.num == 2:
+            if event.delta > 0:
+                self.zoom_in()
+            else:
+                self.zoom_out()
+
+    def zoom_in(self):
+        self.zoom(1.1)
+
+    def zoom_out(self):
+        self.zoom(0.9)
+
+    def zoom(self, factor):
+        self.zoom_factor *= factor
+        self.image_canvas.scale(
+            "all", 0, 0, self.zoom_factor, self.zoom_factor)
 
     def upload_image(self):
         # Open a file dialog to select an image file
@@ -305,7 +348,6 @@ class ImageViewer(tk.Frame):
             self.width_var.set("Width: {}".format(self.width))
 
             # Configure the canvas scroll region and scrollbar commands
-
             self.image_canvas.config(
                 scrollregion=self.image_canvas.bbox(tk.ALL))
             self.scrollbar_h.config(command=self.image_canvas.xview)
@@ -350,13 +392,21 @@ class ImageViewer(tk.Frame):
         self.height_var.set("Height: {}".format(self.image.height))
         self.width_var.set("Width: {}".format(self.image.width))
         # Resize the canvas to match the fixed size
-
+        # Configure the canvas scroll region and scrollbar commands
+        self.image_canvas.config(
+            scrollregion=self.image_canvas.bbox(tk.ALL))
+        self.scrollbar_h.config(command=self.image_canvas.xview)
+        self.image_canvas.config(xscrollcommand=self.scrollbar_h.set)
+        self.scrollbar.config(command=self.image_canvas.yview)
+        self.image_canvas.config(yscrollcommand=self.scrollbar.set)
         self.image_canvas.config(width=500, height=500)
+        self.x_max = 500 - 1
+        self.y_max = 500 - 1
 
     def set_tool(self, tool):
         self.tool = tool
         if self.tool == TOOL_SELECTOR:
-            self.image_canvas.config(cursor="arrow")
+            self.image_canvas.config(cursor="circle")
             self.selector_button.config(relief="sunken")
             self.pen_button.config(relief="raised")
             self.hand_button.config(relief="raised")
@@ -374,15 +424,24 @@ class ImageViewer(tk.Frame):
             self.open_color_picker()
 
     def on_canvas_drag(self, event):
+        # Update the mouse coordinates
+        self.mouse_x = event.x
+        self.mouse_y = event.y  # Invert the y-coordinate
+
+        # Calculate the adjusted coordinates based on the scroll position
+        x_adjusted = self.mouse_x + \
+            self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + \
+            self.image_canvas.yview()[0] * self.image.height
+        
         if self.tool == TOOL_HAND:
             self.image_canvas.scan_dragto(event.x, event.y, gain=1)
         elif self.tool == TOOL_PEN and self.drawing:
             if self.prev_x is not None and self.prev_y is not None:
                 self.image_canvas.create_line(
-                    self.prev_x, self.prev_y, event.x, event.y, fill=self.selected_color, width=2)
-            self.prev_x = event.x
-            self.prev_y = event.y
-
+                    self.prev_x, self.prev_y, x_adjusted, y_adjusted, fill=self.selected_color, width=2)
+            self.prev_x = x_adjusted
+            self.prev_y = y_adjusted
 
     def on_mouse_release(self, event):
         if self.tool == TOOL_PEN:
@@ -427,21 +486,19 @@ class ImageViewer(tk.Frame):
         if self.zoom_canvas:
             self.update_zoom_window()
 
-
     def on_mouse_press(self, event):
+        # Copy the coordinates and RGB values to the clipboard
+        x_adjusted = self.mouse_x + \
+            self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + \
+            self.image_canvas.yview()[0] * self.image.height
+
+        x = int((x_adjusted - self.x_center) /
+                self.zoom_factor + self.x_center)
+        y = int((y_adjusted - self.y_center) /
+                self.zoom_factor + self.y_center)
         if self.tool == TOOL_SELECTOR:
             if self.image:
-                # Copy the coordinates and RGB values to the clipboard
-                x_adjusted = self.mouse_x + \
-                    self.image_canvas.xview()[0] * self.image.width
-                y_adjusted = self.mouse_y + \
-                    self.image_canvas.yview()[0] * self.image.height
-
-                x = int((x_adjusted - self.x_center) /
-                        self.zoom_factor + self.x_center)
-                y = int((y_adjusted - self.y_center) /
-                        self.zoom_factor + self.y_center)
-
                 if self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max:
                     try:
                         pixel = self.image.getpixel((x, y))
@@ -463,8 +520,8 @@ class ImageViewer(tk.Frame):
                     messagebox.showinfo("Code Copied", text)
         elif self.tool == TOOL_PEN:
             self.drawing = True
-            self.prev_x = event.x
-            self.prev_y = event.y
+            self.prev_x = x
+            self.prev_y = y
         elif self.tool == TOOL_HAND:
             self.image_canvas.scan_mark(event.x, event.y)
 
@@ -472,6 +529,10 @@ class ImageViewer(tk.Frame):
         color = colorchooser.askcolor(title="Select Color")
         if color[1] is not None:
             self.selected_color = color[1]
+        else:
+            self.selected_color = "#ffffff"
+        self.tool = TOOL_SELECTOR
+        self.set_tool(self.tool)
 
     def update_zoom_window(self):
         # Create an image for the zoom window
