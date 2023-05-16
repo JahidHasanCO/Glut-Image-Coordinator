@@ -13,8 +13,9 @@ This project is useful for those who work with images and want a quick way to de
 
 ### Screenshots
 | Main Window | Copy Window |
-| ------ | ------ |
-| ![Main Window](ART/main.png) | ![Copy Window](ART/copy.png) |
+| ------ | 
+| ![Main Window](ART/main.png) |
+| ![Copy Window](ART/copy.png) |
 
 
 ### How to Use

@@ -206,7 +206,7 @@ class ImageViewer(tk.Frame):
 
         self.zoom_canvas = tk.Canvas(
             self.bottom_frame, width=100, height=100, borderwidth=1, relief="solid")
-        self.zoom_canvas.grid(row=0, column=0)
+        self.zoom_canvas.grid(row=0, column=0,sticky="nsew")
         self.update_zoom_window()
 
         self.bottom_output_frame = tk.Frame(self.bottom_frame)
@@ -307,22 +307,9 @@ class ImageViewer(tk.Frame):
         # Close the dialog
         self.dialogNewCanvas.destroy()
 
-    def on_mousewheel(self, event):
-        if event.state == 0x008:  # Check if Alt key is pressed
-            self.image_canvas.configure(cursor="magnifying_glass")
-            if event.delta > 0:
-                self.zoom_in()
-            else:
-                self.zoom_out()
-
-    def on_mousewheel_release(self, event):
-        self.tool = TOOL_SELECTOR
-        self.set_tool(TOOL_SELECTOR)
-
     def zoom(self, factor):
         self.canvas_zoom_factor *= factor
-        self.image_canvas.scale(
-            "all", 0, 0, self.canvas_zoom_factor, self.canvas_zoom_factor)
+        self.image_canvas.scale("all", 0, 0, factor, factor)
 
     def upload_image(self):
         # Open a file dialog to select an image file
@@ -578,8 +565,8 @@ class ImageViewer(tk.Frame):
         y = int(self.zoom_center_y - 50 / self.zoom_factor)
         x1 = max(x, 0)
         y1 = max(y, 0)
-        x2 = min(x + 100 // self.zoom_factor, self.image.width) 
-        y2 = min(y + 100 // self.zoom_factor, self.image.height)
+        x2 = min(x + 100 // self.zoom_factor, self.image.width - 1) 
+        y2 = min(y + 100 // self.zoom_factor, self.image.height - 1)
 
         # add padding if the zoomed image is not complete
         if x2 == self.image.width and x1 > 0:
