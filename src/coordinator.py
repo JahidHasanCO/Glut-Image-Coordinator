@@ -13,7 +13,7 @@ from tkinter import colorchooser
 graph_max = 1
 graph_min = 0
 
-# Constants for tool selection
+# Constants for tool selection 
 TOOL_SELECTOR = "Selector"
 TOOL_PEN = "Pen"
 TOOL_HAND = "Hand"
