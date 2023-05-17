@@ -49,6 +49,7 @@ class ImageViewer(tk.Frame):
         menubar = Menu(master)
 
         # Initialize variables
+        self.line_copier = False
         self.image = None
         self.image_tk = None
         self.image_id = None
@@ -90,12 +91,17 @@ class ImageViewer(tk.Frame):
         file.add_separator()
         file.add_command(label='Exit', command=master.destroy)
 
-        setting = Menu(menubar, tearoff=0)
-        menubar.add_cascade(label='Settings', menu=setting)
-        setting.add_command(label='Set Graph Range',
+        self.setting = Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Settings', menu=self.setting)
+        self.setting.add_command(label='Set Graph Range',
                             command=self.open_graph_range_setting)
-        setting.add_command(label='Copy Template Code',
+        self.setting.add_command(label='Copy Template Code',
                             command=self.templateCodeWindow)
+        self.setting.add_command(label="Save Coordinates", command=self.toggle_save_coordinates)
+        self.setting.add_command(label='Show Saved Coordinates',
+                            command=self.savedCodeWindow)
+        self.setting.add_command(label='Clear Saved Coordinates',
+                            command=self.clearSavedCoordinates)
         # Adding Help Menu
         help_ = Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Help', menu=help_)
@@ -106,6 +112,8 @@ class ImageViewer(tk.Frame):
 
         # display Menu
         master.config(menu=menubar)
+        self.line_copier = self.config.getboolean('Settings', 'line_copier', fallback=False)
+        self.update_save_coordinate_setting()
         self.create_widgets()
 
     def create_new_window(self):
@@ -422,8 +430,42 @@ class ImageViewer(tk.Frame):
             if self.prev_x is not None and self.prev_y is not None:
                 self.image_canvas.create_line(
                     self.prev_x, self.prev_y, x_adjusted, y_adjusted, fill=self.selected_color, width=2)
+                if self.line_copier == True:
+                 # Save the coordinate to a text file
+                    if self.line_copier:
+                        coords = "glVertex3f({}f, {}f, 0.0f);".format(normalizeValue(
+                        x_adjusted / self.width), normalizeValue((self.height - y_adjusted) / self.height))
+                        with open("coordinates.txt", "a") as file:
+                            file.write(f"{coords}\n")
             self.prev_x = x_adjusted
             self.prev_y = y_adjusted
+
+    def toggle_save_coordinates(self):
+        self.line_copier = not self.line_copier
+        # Update the UI to reflect the new state
+        index = 2
+        if self.line_copier:
+            self.setting.entryconfig(index, label="Save Coordinates \u2713")
+        else:
+            self.setting.entryconfig(index, label="Save Coordinates")
+        
+        # Save the updated value of line_copier to the configuration file
+        self.config.set('Settings', 'line_copier', str(self.line_copier))
+        with open('coordinator.ini', 'w') as configfile:
+            self.config.write(configfile)
+    
+    def update_save_coordinate_setting(self):
+        index = 2
+        if self.line_copier:
+            self.setting.entryconfig(index, label="Save Coordinates \u2713")
+        else:
+            self.setting.entryconfig(index, label="Save Coordinates")
+
+
+    def clearSavedCoordinates(self):
+        with open("coordinates.txt", "w") as file:
+            file.write("")
+        messagebox.showinfo("Success", "Coordinates cleared!")
 
     def on_mouse_release(self, event):
         if self.tool == TOOL_PEN:
@@ -493,7 +535,7 @@ class ImageViewer(tk.Frame):
                         g = 0
                         b = 0
 
-                    coords = "glVertex3f({}, {}, 0.0f);".format(normalizeValue(
+                    coords = "glVertex3f({}f, {}f, 0.0f);".format(normalizeValue(
                         x / self.width), normalizeValue((self.height - y) / self.height))
                     rgb = "glColor3f({}, {}, {});".format(
                         round(r / 255, 3), round(g / 255, 3), round(b / 255, 3))
@@ -659,7 +701,7 @@ class ImageViewer(tk.Frame):
 
             coords = "glVertex3f({}, {}, 0.0f);".format(normalizeValue(
                 x / self.width), normalizeValue((self.height - y) / self.height))
-            rgb = "glColor3f({}, {}, {});".format(
+            rgb = "glColor3f({}f, {}f, {});".format(
                 round(r / 255, 3), round(g / 255, 3), round(b / 255, 3))
             text = "{}\n{}".format(rgb, coords)
             pyperclip.copy(text)
@@ -676,7 +718,7 @@ class ImageViewer(tk.Frame):
 
         # Add a label with the program name and version
         label1 = ttk.Label(
-            about_window, text="Glut Image Coordinator v1.4", font=("Helvetica", 14))
+            about_window, text="Glut Image Coordinator v1.5", font=("Helvetica", 14))
         label1.pack(pady=10)
 
         # Add a label with the developer name and email
@@ -721,10 +763,13 @@ class ImageViewer(tk.Frame):
         if not self.config.has_section('graph'):
             self.config.add_section('graph')
 
+        if not self.config.has_section('Settings'):
+            self.config.add_section('Settings')
+
         # Get initial values for graph_max and graph_min
         graph_max = self.config.getint('graph', 'max', fallback=1)
         graph_min = self.config.getint('graph', 'min', fallback=0)
-
+        
         # Create a ttk.Scale widget with a range of 0 to 100
 
         ttk.Label(top, text="Set Graph Max Value", font=(
@@ -817,6 +862,33 @@ class ImageViewer(tk.Frame):
         sample_code.pack(fill="both", expand=True)
         sample_code.insert(tk.END, sample_code_text)
 
+
+    def savedCodeWindow(self):
+        top = tk.Toplevel(self.master)
+        top.geometry("500x400")
+        top.minsize(500, 400)
+        top.maxsize(500, 400)
+        top.title("Saved Coordinates")
+        filePath = resource_path("img/icon.ico")
+        top.iconbitmap(filePath)
+
+        # Specify the text file to read
+        filename = "coordinates.txt"
+        # Read the contents of the text file
+        file_contents = read_text_file(filename)
+        if file_contents == "":
+            file_contents = "There is No Saved Coordinates."
+        sample_code = tk.Text(top, wrap="word")
+        sample_code.pack(fill="both", expand=True, padx=10, pady=10)
+        sample_code.insert(tk.END, file_contents)
+
+def read_text_file(filename):
+    try:
+        with open(filename, 'r') as file:
+            contents = file.read()
+            return contents
+    except FileNotFoundError:
+        return "There is No Saved Coordinates."
 
 if __name__ == "__main__":
     try:
