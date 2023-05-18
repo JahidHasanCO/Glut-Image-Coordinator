@@ -19,6 +19,7 @@ TOOL_PEN = "Pen"
 TOOL_PEN_POINT = "Pen_pointer"
 TOOL_HAND = "Hand"
 TOOL_COLOR_SELECTOR = "color_selector"
+TOOL_CLEAR_DRAW = "clear_draw"
 
 
 def darkstyle(root):
@@ -76,6 +77,8 @@ class ImageViewer(tk.Frame):
         self.hand_icon = tk.PhotoImage(file=resource_path("img/hand.png"))
         self.color_selector_icon = tk.PhotoImage(
             file=resource_path("img/colorPicker.png"))
+        self.draw_clear_icon = tk.PhotoImage(
+            file=resource_path("img/clear.png"))
 
         # Initialize pen drawing variables
         self.drawing = False
@@ -84,6 +87,7 @@ class ImageViewer(tk.Frame):
         self.selected_color = "#000000"
         self.pixels = {}
         self.background_color = "white"
+        self.drawing_tag = "user_drawing"
 
         # Adding File Menu and commands
         file = Menu(menubar, tearoff=0)
@@ -178,6 +182,10 @@ class ImageViewer(tk.Frame):
             self.left_frame, text="", image=self.color_selector_icon, command=lambda: self.set_tool(TOOL_COLOR_SELECTOR))
         self.color_selector.grid(row=6, column=0, sticky="ew", padx=5, pady=5)
 
+        self.clear_draw = tk.Button(
+            self.left_frame, text="", image=self.draw_clear_icon, command=lambda: self.set_tool(TOOL_CLEAR_DRAW))
+        self.clear_draw.grid(row=7, column=0, sticky="ew", padx=5, pady=5)
+
         # Inside the create_toolbar method
         button_width = self.selector_icon.width() + 10  # Add padding
         button_height = self.selector_icon.height() + 10  # Add padding
@@ -192,12 +200,14 @@ class ImageViewer(tk.Frame):
             width=button_width, height=button_height, relief="flat", bd=0, text="")
         self.color_selector.config(
             width=button_width, height=button_height, relief="flat", bd=0, text="")
+        self.clear_draw.config(
+            width=button_width, height=button_height, relief="flat", bd=0, text="")
 
         # Create an image canvas to display the uploaded image
         self.image_canvas = tk.Canvas(
             self.frame, borderwidth=1, relief="solid")
         self.image_canvas.grid(row=0, column=0)
-        self.image_canvas.config(cursor="circle")
+        self.image_canvas.config(cursor="crosshair")
 
         # Bind the mouse events to the canvas
         self.image_canvas.bind("<Motion>", self.on_mouse_move)
@@ -442,7 +452,7 @@ class ImageViewer(tk.Frame):
             self.hand_button.config(relief="raised", background="white")
             self.pen_point_button.config(relief="raised", background="white")
         elif self.tool == TOOL_PEN_POINT:
-            self.image_canvas.config(cursor="pencil")
+            self.image_canvas.config(cursor="dot")
             self.selector_button.config(relief="raised", background="white")
             self.pen_button.config(relief="sunken", background="white")
             self.hand_button.config(relief="raised", background="white")
@@ -455,6 +465,8 @@ class ImageViewer(tk.Frame):
             self.pen_point_button.config(relief="raised", background="white")
         elif self.tool == TOOL_COLOR_SELECTOR:
             self.open_color_picker()
+        elif self.tool == TOOL_CLEAR_DRAW:
+            self.image_canvas.delete(self.drawing_tag)
 
     def on_canvas_drag(self, event):
         # Update the mouse coordinates
@@ -472,7 +484,7 @@ class ImageViewer(tk.Frame):
         elif self.tool == TOOL_PEN and self.drawing:
             if self.prev_x is not None and self.prev_y is not None:
                 self.image_canvas.create_line(
-                    self.prev_x, self.prev_y, x_adjusted, y_adjusted, fill=self.selected_color, width=2)
+                    self.prev_x, self.prev_y, x_adjusted, y_adjusted, fill=self.selected_color, width=2,tags=self.drawing_tag)
                 if self.line_copier == True:
                  # Save the coordinate to a text file
                     if self.line_copier:
@@ -594,7 +606,7 @@ class ImageViewer(tk.Frame):
                 self.last_pen_pointer_x = x - 1
             if self.last_pen_pointer_y == -1:
                 self.last_pen_pointer_y = y
-            self.image_canvas.create_line(x+1,y,self.last_pen_pointer_x,self.last_pen_pointer_y, fill=self.selected_color, width=2)
+            self.image_canvas.create_line(x+1,y,self.last_pen_pointer_x,self.last_pen_pointer_y, fill=self.selected_color, width=2,tags=self.drawing_tag)
 
             self.last_pen_pointer_x = x + 1
             self.last_pen_pointer_y = y
