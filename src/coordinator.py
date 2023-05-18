@@ -429,7 +429,7 @@ class ImageViewer(tk.Frame):
         self.last_pen_pointer_x = -1.0
         self.last_pen_pointer_y = -1.0
         if self.tool == TOOL_SELECTOR:
-            self.image_canvas.config(cursor="circle")
+            self.image_canvas.config(cursor="crosshair")
             self.selector_button.config(
                 relief="sunken", background="lightgrey")
             self.pen_button.config(relief="raised", background="white")
@@ -595,9 +595,17 @@ class ImageViewer(tk.Frame):
             if self.last_pen_pointer_y == -1:
                 self.last_pen_pointer_y = y
             self.image_canvas.create_line(x+1,y,self.last_pen_pointer_x,self.last_pen_pointer_y, fill=self.selected_color, width=2)
+
             self.last_pen_pointer_x = x + 1
             self.last_pen_pointer_y = y
-
+            if self.line_copier == True:
+                 # Save the coordinate to a text file
+                    if self.line_copier:
+                        coords = "glVertex3f({}f, {}f, 0.0f);".format(normalizeValue(
+                        x_adjusted / self.width), normalizeValue((self.height - y_adjusted) / self.height))
+                        with open("coordinates.txt", "a") as file:
+                            file.write(f"{coords}\n")
+        
         elif self.tool == TOOL_HAND:
             self.image_canvas.scan_mark(event.x, event.y)
 
@@ -657,7 +665,7 @@ class ImageViewer(tk.Frame):
             self.zoom_center_y = y / self.zoom_factor
 
             # Schedule the zoom image update after a delay
-            self.after(25, self.update_zoom_image)
+            self.after(0, self.update_zoom_image)
 
             # Redraw the zoom rectangle
             x1 = x - 25
@@ -788,7 +796,7 @@ class ImageViewer(tk.Frame):
 
         # Add a label with the program name and version
         label1 = ttk.Label(
-            about_window, text="Glut Image Coordinator v1.5", font=("Helvetica", 14))
+            about_window, text="Glut Image Coordinator v1.5.1", font=("Helvetica", 14))
         label1.pack(pady=10)
 
         # Add a label with the developer name and email
