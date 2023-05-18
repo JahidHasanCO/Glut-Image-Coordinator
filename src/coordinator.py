@@ -16,6 +16,7 @@ graph_min = 0
 # Constants for tool selection
 TOOL_SELECTOR = "Selector"
 TOOL_PEN = "Pen"
+TOOL_PEN_POINT = "Pen_pointer"
 TOOL_HAND = "Hand"
 TOOL_COLOR_SELECTOR = "color_selector"
 
@@ -65,6 +66,10 @@ class ImageViewer(tk.Frame):
         self.width = 0.0
         self.tool = TOOL_SELECTOR
         self.canvas_zoom_factor = 1.0
+
+        self.last_pen_pointer_x = -1.0
+        self.last_pen_pointer_y = -1.0
+
         # Inside the create_toolbar method
         self.selector_icon = tk.PhotoImage(file=resource_path("img/mouse.png"))
         self.pen_icon = tk.PhotoImage(file=resource_path("img/pen.png"))
@@ -141,13 +146,18 @@ class ImageViewer(tk.Frame):
         self.pen_button = tk.Button(
             self.left_frame, text="", image=self.pen_icon,  command=lambda: self.set_tool(TOOL_PEN))
         self.pen_button.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
+
+        self.pen_point_button = tk.Button(
+            self.left_frame, text="", image=self.pen_icon,  command=lambda: self.set_tool(TOOL_PEN_POINT))
+        self.pen_point_button.grid(row=4, column=0, sticky="ew", padx=5, pady=5)
+
         self.hand_button = tk.Button(
             self.left_frame, text="", image=self.hand_icon,  command=lambda: self.set_tool(TOOL_HAND))
-        self.hand_button.grid(row=4, column=0, sticky="ew", padx=5, pady=5)
+        self.hand_button.grid(row=5, column=0, sticky="ew", padx=5, pady=5)
 
         self.color_selector = tk.Button(
             self.left_frame, text="", image=self.color_selector_icon, command=lambda: self.set_tool(TOOL_COLOR_SELECTOR))
-        self.color_selector.grid(row=5, column=0, sticky="ew", padx=5, pady=5)
+        self.color_selector.grid(row=6, column=0, sticky="ew", padx=5, pady=5)
 
         # Inside the create_toolbar method
         button_width = self.selector_icon.width() + 10  # Add padding
@@ -155,6 +165,8 @@ class ImageViewer(tk.Frame):
 
         self.selector_button.config(
             width=button_width, height=button_height, relief="flat", bd=0, text="",background="lightgrey")
+        self.pen_point_button.config(
+            width=button_width, height=button_height, relief="flat", bd=0, text="")
         self.pen_button.config(
             width=button_width, height=button_height, relief="flat", bd=0, text="")
         self.hand_button.config(
@@ -395,21 +407,33 @@ class ImageViewer(tk.Frame):
 
     def set_tool(self, tool):
         self.tool = tool
+        self.last_pen_pointer_x = -1.0
+        self.last_pen_pointer_y = -1.0
         if self.tool == TOOL_SELECTOR:
             self.image_canvas.config(cursor="circle")
-            self.selector_button.config(relief="sunken",background="lightgrey")
-            self.pen_button.config(relief="raised",background="white")
-            self.hand_button.config(relief="raised",background="white")
+            self.selector_button.config(
+                relief="sunken", background="lightgrey")
+            self.pen_button.config(relief="raised", background="white")
+            self.hand_button.config(relief="raised", background="white")
+            self.pen_point_button.config(relief="raised", background="white")
         elif self.tool == TOOL_PEN:
             self.image_canvas.config(cursor="pencil")
-            self.selector_button.config(relief="raised",background="white")
-            self.pen_button.config(relief="sunken",background="lightgrey")
-            self.hand_button.config(relief="raised",background="white")
+            self.selector_button.config(relief="raised", background="white")
+            self.pen_button.config(relief="sunken", background="lightgrey")
+            self.hand_button.config(relief="raised", background="white")
+            self.pen_point_button.config(relief="raised", background="white")
+        elif self.tool == TOOL_PEN_POINT:
+            self.image_canvas.config(cursor="pencil")
+            self.selector_button.config(relief="raised", background="white")
+            self.pen_button.config(relief="sunken", background="white")
+            self.hand_button.config(relief="raised", background="white")
+            self.pen_point_button.config(relief="sunken", background="lightgrey")
         elif self.tool == TOOL_HAND:
             self.image_canvas.config(cursor="hand2")
-            self.selector_button.config(relief="raised",background="white")
-            self.pen_button.config(relief="raised",background="white")
-            self.hand_button.config(relief="sunken",background="lightgrey")
+            self.selector_button.config(relief="raised", background="white")
+            self.pen_button.config(relief="raised", background="white")
+            self.hand_button.config(relief="sunken", background="lightgrey")
+            self.pen_point_button.config(relief="raised", background="white")
         elif self.tool == TOOL_COLOR_SELECTOR:
             self.open_color_picker()
 
@@ -546,6 +570,15 @@ class ImageViewer(tk.Frame):
             self.drawing = True
             self.prev_x = x
             self.prev_y = y
+        elif self.tool == TOOL_PEN_POINT:
+            if self.last_pen_pointer_x == -1:
+                self.last_pen_pointer_x = x - 1
+            if self.last_pen_pointer_y == -1:
+                self.last_pen_pointer_y = y
+            self.image_canvas.create_line(x+1,y,self.last_pen_pointer_x,self.last_pen_pointer_y, fill=self.selected_color, width=2)
+            self.last_pen_pointer_x = x + 1
+            self.last_pen_pointer_y = y
+
         elif self.tool == TOOL_HAND:
             self.image_canvas.scan_mark(event.x, event.y)
 
@@ -567,17 +600,30 @@ class ImageViewer(tk.Frame):
         self.zoom_canvas.create_image(
             0, 0, anchor="center", image=self.zoom_image_tk)
 
+        x = self.mouse_x
+        y = self.mouse_y
+        if self.image:        # Copy the coordinates and RGB values to the clipboard
+            x_adjusted = self.mouse_x + \
+                self.image_canvas.xview()[0] * self.image.width
+            y_adjusted = self.mouse_y + \
+                self.image_canvas.yview()[0] * self.image.height
+
+            x = int((x_adjusted - self.x_center) /
+                    self.zoom_factor + self.x_center)
+            y = int((y_adjusted - self.y_center) /
+                    self.zoom_factor + self.y_center)
+
+        if self.zoom_rect_id:
+            # delete the previous zoom rectangle
+            self.image_canvas.delete(self.zoom_rect_id)
+        
         # Create a rectangle to show the zoom area on the canvas
         x1 = self.mouse_x - 25
         y1 = self.mouse_y - 25
         x2 = self.mouse_x + 25
         y2 = self.mouse_y + 25
         self.zoom_rect_id = self.image_canvas.create_rectangle(
-            x1, y1, x2, y2, outline="red")
-
-        if self.zoom_rect_id:
-            # Hide the zoom rectangle
-            self.image_canvas.itemconfigure(self.zoom_rect_id, state='hidden')
+            x1, y1, x2, y2, outline="lightgrey")
 
         if self.image and self.zoom_canvas:
             # Update the zoom rectangle position and size
@@ -600,6 +646,11 @@ class ImageViewer(tk.Frame):
             x2 = self.mouse_x + 25
             y2 = self.mouse_y + 25
             self.image_canvas.coords(self.zoom_rect_id, x1, y1, x2, y2)
+            
+        if self.tool != TOOL_SELECTOR:
+            # Hide the zoom rectangle
+            # self.image_canvas.itemconfigure(self.zoom_rect_id, state='hidden')
+            self.image_canvas.delete(self.zoom_rect_id)
 
     def update_zoom_image(self):
         # Update the zoom window image
