@@ -474,10 +474,8 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Calculate the adjusted coordinates based on the scroll position
-        x_adjusted = self.mouse_x + \
-            self.image_canvas.xview()[0] * self.image.width
-        y_adjusted = self.mouse_y + \
-            self.image_canvas.yview()[0] * self.image.height
+        x_adjusted = self.mouse_x + self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + self.image_canvas.yview()[0] * self.image.height
 
         if self.tool == TOOL_HAND:
             self.image_canvas.scan_dragto(event.x, event.y, gain=1)
@@ -534,10 +532,8 @@ class ImageViewer(tk.Frame):
         self.mouse_y = event.y  # Invert the y-coordinate
 
         # Calculate the adjusted coordinates based on the scroll position
-        x_adjusted = self.mouse_x + \
-            self.image_canvas.xview()[0] * self.image.width
-        y_adjusted = self.mouse_y + \
-            self.image_canvas.yview()[0] * self.image.height
+        x_adjusted = self.mouse_x + self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + self.image_canvas.yview()[0] * self.image.height
 
         # Update the coordinate text
         self.coord_var.set("X-Axis={}, Y-Axis={}".format(
@@ -567,10 +563,8 @@ class ImageViewer(tk.Frame):
 
     def on_mouse_press(self, event):
         # Copy the coordinates and RGB values to the clipboard
-        x_adjusted = self.mouse_x + \
-            self.image_canvas.xview()[0] * self.image.width
-        y_adjusted = self.mouse_y + \
-            self.image_canvas.yview()[0] * self.image.height
+        x_adjusted = self.mouse_x + self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + self.image_canvas.yview()[0] * self.image.height
 
         x = int((x_adjusted - self.x_center) /
                 self.zoom_factor + self.x_center)
@@ -631,9 +625,6 @@ class ImageViewer(tk.Frame):
         self.set_tool(self.tool)
 
     def update_zoom_window(self):
-        # Create an image for the zoom window
-        # self.x_center = self.mouse_x / self.zoom_factor
-        # self.y_center = self.mouse_y / self.zoom_factor
         self.zoom_image = Image.new("RGB", (100, 100), "white")
         self.zoom_image_tk = ImageTk.PhotoImage(self.zoom_image)
         self.zoom_canvas.create_image(
@@ -642,10 +633,8 @@ class ImageViewer(tk.Frame):
         x = self.mouse_x
         y = self.mouse_y
         if self.image:        # Copy the coordinates and RGB values to the clipboard
-            x_adjusted = self.mouse_x + \
-                self.image_canvas.xview()[0] * self.image.width
-            y_adjusted = self.mouse_y + \
-                self.image_canvas.yview()[0] * self.image.height
+            x_adjusted = self.mouse_x + self.image_canvas.xview()[0] * self.image.width
+            y_adjusted = self.mouse_y + self.image_canvas.yview()[0] * self.image.height
 
             x = int((x_adjusted - self.x_center) /
                     self.zoom_factor + self.x_center)
@@ -767,10 +756,8 @@ class ImageViewer(tk.Frame):
 
     def save_to_clipboard(self):
         # Copy the coordinates and RGB values to the clipboard
-        x_adjusted = self.mouse_x + \
-            self.image_canvas.xview()[0] * self.image.width
-        y_adjusted = self.mouse_y + \
-            self.image_canvas.yview()[0] * self.image.height
+        x_adjusted = self.mouse_x + self.image_canvas.xview()[0] * self.image.width
+        y_adjusted = self.mouse_y + self.image_canvas.yview()[0] * self.image.height
 
         x = int((x_adjusted - self.x_center) /
                 self.zoom_factor + self.x_center)
