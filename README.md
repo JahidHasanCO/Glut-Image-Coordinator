@@ -12,10 +12,10 @@ This project is useful for those who work with images and want a quick way to de
 -   Copy code easily by pressing CTRL + X
 
 ### Screenshots
-| Main Window | Copy Window |
-| ------ | 
-| ![Main Window](ART/main.png) |
-| ![Copy Window](ART/copy.png) |
+
+![Main Window](ART/main.png) 
+![Copy Window](ART/copy.png) 
+![Paint Window](ART/paint.png)
 
 
 ### How to Use
