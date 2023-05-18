@@ -43,9 +43,8 @@ class ImageViewer(tk.Frame):
         self.master.geometry("500x600")
         self.master.minsize(500, 600)
 
-        # Load configuration file
-        self.config = configparser.ConfigParser()
-        self.config.read('coordinator.ini')
+        self.configLoader()
+    
         # Creating Menubar
         menubar = Menu(master)
 
@@ -73,6 +72,7 @@ class ImageViewer(tk.Frame):
         # Inside the create_toolbar method
         self.selector_icon = tk.PhotoImage(file=resource_path("img/mouse.png"))
         self.pen_icon = tk.PhotoImage(file=resource_path("img/pen.png"))
+        self.pen_pointer_icon = tk.PhotoImage(file=resource_path("img/penPointer.png"))
         self.hand_icon = tk.PhotoImage(file=resource_path("img/hand.png"))
         self.color_selector_icon = tk.PhotoImage(
             file=resource_path("img/colorPicker.png"))
@@ -121,6 +121,25 @@ class ImageViewer(tk.Frame):
         self.update_save_coordinate_setting()
         self.create_widgets()
 
+    def configLoader(self):
+        # Load configuration file
+        self.config = configparser.ConfigParser()
+        if os.path.exists('coordinator.ini'):
+            self.config.read('coordinator.ini')
+        else:
+            # Write the configuration to the file
+            with open('coordinator.ini', 'w') as configfile:
+                self.config.write(configfile)
+        
+        if not self.config.has_section('graph'):
+            self.config.add_section('graph')
+            self.config.set('graph', 'max', '1')
+            self.config.set('graph', 'min', '0')
+
+        if not self.config.has_section('Settings'):
+            self.config.add_section('Settings')
+            self.config.set('Settings', 'line_copier', 'False')
+
     def create_new_window(self):
         new_window = tk.Toplevel(self.master)
         ImageViewer(new_window)
@@ -148,7 +167,7 @@ class ImageViewer(tk.Frame):
         self.pen_button.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
 
         self.pen_point_button = tk.Button(
-            self.left_frame, text="", image=self.pen_icon,  command=lambda: self.set_tool(TOOL_PEN_POINT))
+            self.left_frame, text="", image=self.pen_pointer_icon,  command=lambda: self.set_tool(TOOL_PEN_POINT))
         self.pen_point_button.grid(row=4, column=0, sticky="ew", padx=5, pady=5)
 
         self.hand_button = tk.Button(
@@ -593,12 +612,12 @@ class ImageViewer(tk.Frame):
 
     def update_zoom_window(self):
         # Create an image for the zoom window
-        self.x_center = self.mouse_x / self.zoom_factor
-        self.y_center = self.mouse_y / self.zoom_factor
+        # self.x_center = self.mouse_x / self.zoom_factor
+        # self.y_center = self.mouse_y / self.zoom_factor
         self.zoom_image = Image.new("RGB", (100, 100), "white")
         self.zoom_image_tk = ImageTk.PhotoImage(self.zoom_image)
         self.zoom_canvas.create_image(
-            0, 0, anchor="center", image=self.zoom_image_tk)
+            0, 0, anchor="nw", image=self.zoom_image_tk)
 
         x = self.mouse_x
         y = self.mouse_y
@@ -618,33 +637,33 @@ class ImageViewer(tk.Frame):
             self.image_canvas.delete(self.zoom_rect_id)
         
         # Create a rectangle to show the zoom area on the canvas
-        x1 = self.mouse_x - 25
-        y1 = self.mouse_y - 25
-        x2 = self.mouse_x + 25
-        y2 = self.mouse_y + 25
+        x1 = x - 25
+        y1 = y - 25
+        x2 = x + 25
+        y2 = y + 25
         self.zoom_rect_id = self.image_canvas.create_rectangle(
             x1, y1, x2, y2, outline="lightgrey")
 
         if self.image and self.zoom_canvas:
             # Update the zoom rectangle position and size
-            x1 = self.mouse_x - 25
-            y1 = self.mouse_y - 25
-            x2 = self.mouse_x + 25
-            y2 = self.mouse_y + 25
+            x1 = x - 25
+            y1 = y - 25
+            x2 = x + 25
+            y2 = y + 25
             self.image_canvas.coords(self.zoom_rect_id, x1, y1, x2, y2)
 
             # Update the zoom center position
-            self.zoom_center_x = self.mouse_x / self.zoom_factor
-            self.zoom_center_y = self.mouse_y / self.zoom_factor
+            self.zoom_center_x = x/ self.zoom_factor
+            self.zoom_center_y = y / self.zoom_factor
 
             # Schedule the zoom image update after a delay
             self.after(25, self.update_zoom_image)
 
             # Redraw the zoom rectangle
-            x1 = self.mouse_x - 25
-            y1 = self.mouse_y - 25
-            x2 = self.mouse_x + 25
-            y2 = self.mouse_y + 25
+            x1 = x - 25
+            y1 = y - 25
+            x2 = x + 25
+            y2 = y + 25
             self.image_canvas.coords(self.zoom_rect_id, x1, y1, x2, y2)
             
         if self.tool != TOOL_SELECTOR:
@@ -811,11 +830,6 @@ class ImageViewer(tk.Frame):
         filePath = resource_path("img/icon.ico")
         top.iconbitmap(filePath)
 
-        if not self.config.has_section('graph'):
-            self.config.add_section('graph')
-
-        if not self.config.has_section('Settings'):
-            self.config.add_section('Settings')
 
         # Get initial values for graph_max and graph_min
         graph_max = self.config.getint('graph', 'max', fallback=1)
