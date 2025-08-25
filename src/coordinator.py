@@ -9,6 +9,7 @@ import configparser
 from util.get_resource import *
 from util.normalization import normalizeValue
 from tkinter import colorchooser
+from layers import Layer, LayerManager
 
 graph_max = 1
 graph_min = 0
@@ -88,6 +89,11 @@ class ImageViewer(tk.Frame):
         self.pixels = {}
         self.background_color = "white"
         self.drawing_tag = "user_drawing"
+        
+        # Initialize layer management
+        self.layer_manager = LayerManager()
+        self.current_drawing_layer = None
+        self.layer_window = None
 
         # Adding File Menu and commands
         file = Menu(menubar, tearoff=0)
@@ -111,6 +117,12 @@ class ImageViewer(tk.Frame):
                             command=self.savedCodeWindow)
         self.setting.add_command(label='Clear Saved Coordinates',
                             command=self.clearSavedCoordinates)
+        
+        # Adding Layers Menu
+        layers_menu = Menu(menubar, tearoff=0)
+        menubar.add_cascade(label='Layers', menu=layers_menu)
+        layers_menu.add_command(label='Show Layers', command=self.show_layer_window)
+        
         # Adding Help Menu
         help_ = Menu(menubar, tearoff=0)
         menubar.add_cascade(label='Help', menu=help_)
@@ -390,6 +402,12 @@ class ImageViewer(tk.Frame):
             self.image_canvas.config(width=self.width, height=self.height)
             self.image_canvas.itemconfig(self.image_id, image=self.image_tk)
 
+            # Create a layer for the uploaded image
+            import os
+            filename = os.path.basename(file_path)
+            layer = self.layer_manager.create_layer("image", f"Image_{filename}")
+            layer.add_object_id(self.image_id)
+
             self.update_coordinate()
 
     def upload_placeholder_image(self):
@@ -467,6 +485,9 @@ class ImageViewer(tk.Frame):
             self.open_color_picker()
         elif self.tool == TOOL_CLEAR_DRAW:
             self.image_canvas.delete(self.drawing_tag)
+            # Remove all drawing and line layers since objects are deleted
+            self.layer_manager.layers = [layer for layer in self.layer_manager.layers 
+                                       if layer.layer_type not in ["drawing", "line"]]
 
     def on_canvas_drag(self, event):
         # Update the mouse coordinates
@@ -481,8 +502,13 @@ class ImageViewer(tk.Frame):
             self.image_canvas.scan_dragto(event.x, event.y, gain=1)
         elif self.tool == TOOL_PEN and self.drawing:
             if self.prev_x is not None and self.prev_y is not None:
-                self.image_canvas.create_line(
+                line_id = self.image_canvas.create_line(
                     self.prev_x, self.prev_y, x_adjusted, y_adjusted, fill=self.selected_color, width=2,tags=self.drawing_tag)
+                
+                # Add line to current drawing layer
+                if self.current_drawing_layer:
+                    self.current_drawing_layer.add_object_id(line_id)
+                
                 if self.line_copier == True:
                  # Save the coordinate to a text file
                     if self.line_copier:
@@ -525,6 +551,8 @@ class ImageViewer(tk.Frame):
             self.drawing = False
             self.prev_x = None
             self.prev_y = None
+            # Finalize current drawing layer
+            self.current_drawing_layer = None
 
     def on_mouse_move(self, event):
         # Update the mouse coordinates
@@ -595,12 +623,20 @@ class ImageViewer(tk.Frame):
             self.drawing = True
             self.prev_x = x
             self.prev_y = y
+            # Start a new drawing layer
+            self.current_drawing_layer = self.layer_manager.create_layer("drawing")
         elif self.tool == TOOL_PEN_POINT:
             if self.last_pen_pointer_x == -1:
                 self.last_pen_pointer_x = x - 1
             if self.last_pen_pointer_y == -1:
                 self.last_pen_pointer_y = y
-            self.image_canvas.create_line(x+1,y,self.last_pen_pointer_x,self.last_pen_pointer_y, fill=self.selected_color, width=2,tags=self.drawing_tag)
+            
+            line_id = self.image_canvas.create_line(x+1,y,self.last_pen_pointer_x,self.last_pen_pointer_y, fill=self.selected_color, width=2,tags=self.drawing_tag)
+            
+            # Create a new layer for each pen point line or add to existing one
+            if not self.current_drawing_layer:
+                self.current_drawing_layer = self.layer_manager.create_layer("line")
+            self.current_drawing_layer.add_object_id(line_id)
 
             self.last_pen_pointer_x = x + 1
             self.last_pen_pointer_y = y
@@ -953,6 +989,193 @@ class ImageViewer(tk.Frame):
         sample_code = tk.Text(top, wrap="word")
         sample_code.pack(fill="both", expand=True, padx=10, pady=10)
         sample_code.insert(tk.END, file_contents)
+
+    def show_layer_window(self):
+        """Show the Layer window with all canvas layers"""
+        if self.layer_window and self.layer_window.winfo_exists():
+            # If window already exists, bring it to front
+            self.layer_window.lift()
+            return
+            
+        # Create the layer window
+        self.layer_window = tk.Toplevel(self.master)
+        self.layer_window.title("Layers")
+        self.layer_window.geometry("300x400")
+        self.layer_window.minsize(250, 300)
+        
+        # Set icon if available
+        try:
+            filePath = resource_path("img/icon.ico")
+            self.layer_window.iconbitmap(filePath)
+        except:
+            pass
+        
+        # Create main frame
+        main_frame = ttk.Frame(self.layer_window)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Title label
+        title_label = ttk.Label(main_frame, text="Canvas Layers", font=("Helvetica", 12, "bold"))
+        title_label.pack(pady=(0, 10))
+        
+        # Create listbox with scrollbar
+        list_frame = ttk.Frame(main_frame)
+        list_frame.pack(fill="both", expand=True)
+        
+        # Scrollbar for listbox
+        scrollbar = ttk.Scrollbar(list_frame)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Listbox to show layers
+        self.layer_listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set)
+        self.layer_listbox.pack(side="left", fill="both", expand=True)
+        scrollbar.config(command=self.layer_listbox.yview)
+        
+        # Bind selection event
+        self.layer_listbox.bind('<<ListboxSelect>>', self.on_layer_select)
+        
+        # Buttons frame
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill="x", pady=(10, 0))
+        
+        # Refresh button
+        refresh_btn = ttk.Button(button_frame, text="Refresh", command=self.refresh_layers)
+        refresh_btn.pack(side="left", padx=(0, 5))
+        
+        # Hide/Show button
+        self.toggle_btn = ttk.Button(button_frame, text="Hide Layer", command=self.toggle_layer_visibility)
+        self.toggle_btn.pack(side="left", padx=(0, 5))
+        
+        # Delete button
+        delete_btn = ttk.Button(button_frame, text="Delete Layer", command=self.delete_selected_layer)
+        delete_btn.pack(side="left")
+        
+        # Initial refresh
+        self.refresh_layers()
+        
+        # Handle window close event
+        self.layer_window.protocol("WM_DELETE_WINDOW", self.on_layer_window_close)
+    
+    def refresh_layers(self):
+        """Refresh the layer list in the listbox"""
+        if not hasattr(self, 'layer_listbox'):
+            return
+            
+        # Clear current items
+        self.layer_listbox.delete(0, tk.END)
+        
+        # Add all layers
+        for layer in self.layer_manager.get_all_layers():
+            status = "Hidden" if not layer.visible else "Visible"
+            display_text = f"{layer.tag} ({len(layer.object_ids)} objects) - {status}"
+            self.layer_listbox.insert(tk.END, display_text)
+    
+    def on_layer_select(self, event):
+        """Handle layer selection in the listbox"""
+        selection = self.layer_listbox.curselection()
+        if not selection:
+            return
+            
+        layer_index = selection[0]
+        layers = self.layer_manager.get_all_layers()
+        if layer_index < len(layers):
+            selected_layer = layers[layer_index]
+            self.highlight_layer_objects(selected_layer)
+    
+    def highlight_layer_objects(self, layer):
+        """Highlight objects belonging to the selected layer on canvas"""
+        # First, remove any existing highlights
+        self.image_canvas.delete("highlight")
+        
+        # Highlight objects in this layer
+        for obj_id in layer.object_ids:
+            try:
+                # Get object coordinates
+                coords = self.image_canvas.coords(obj_id)
+                if len(coords) >= 4:  # Line object
+                    # Create a thicker, colored line around the original
+                    x1, y1, x2, y2 = coords[:4]
+                    self.image_canvas.create_line(
+                        x1, y1, x2, y2, 
+                        fill="red", width=4, tags="highlight"
+                    )
+                elif len(coords) == 2:  # Image object
+                    # Create a rectangle around the image
+                    x, y = coords
+                    bbox = self.image_canvas.bbox(obj_id)
+                    if bbox:
+                        x1, y1, x2, y2 = bbox
+                        self.image_canvas.create_rectangle(
+                            x1-2, y1-2, x2+2, y2+2,
+                            outline="red", width=3, tags="highlight"
+                        )
+            except tk.TclError:
+                # Object might have been deleted, ignore
+                pass
+    
+    def toggle_layer_visibility(self):
+        """Toggle visibility of the selected layer"""
+        selection = self.layer_listbox.curselection()
+        if not selection:
+            return
+            
+        layer_index = selection[0]
+        layers = self.layer_manager.get_all_layers()
+        if layer_index < len(layers):
+            layer = layers[layer_index]
+            layer.visible = not layer.visible
+            
+            # Update canvas objects visibility
+            state = "normal" if layer.visible else "hidden"
+            for obj_id in layer.object_ids:
+                try:
+                    self.image_canvas.itemconfig(obj_id, state=state)
+                except tk.TclError:
+                    # Object might have been deleted, ignore
+                    pass
+            
+            # Refresh the display
+            self.refresh_layers()
+            # Restore selection
+            self.layer_listbox.selection_set(layer_index)
+    
+    def delete_selected_layer(self):
+        """Delete the selected layer and its objects"""
+        selection = self.layer_listbox.curselection()
+        if not selection:
+            return
+            
+        layer_index = selection[0]
+        layers = self.layer_manager.get_all_layers()
+        if layer_index < len(layers):
+            layer = layers[layer_index]
+            
+            # Confirm deletion
+            result = messagebox.askyesno(
+                "Delete Layer", 
+                f"Are you sure you want to delete layer '{layer.tag}' and all its objects?"
+            )
+            if result:
+                # Delete objects from canvas
+                for obj_id in layer.object_ids:
+                    try:
+                        self.image_canvas.delete(obj_id)
+                    except tk.TclError:
+                        # Object might have been deleted already
+                        pass
+                
+                # Remove layer from manager
+                self.layer_manager.remove_layer(layer.tag)
+                
+                # Refresh display
+                self.refresh_layers()
+    
+    def on_layer_window_close(self):
+        """Handle layer window close event"""
+        # Remove highlights
+        self.image_canvas.delete("highlight")
+        self.layer_window.destroy()
+        self.layer_window = None
 
 def read_text_file(filename):
     try:
